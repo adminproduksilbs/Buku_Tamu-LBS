@@ -63,7 +63,7 @@
                 <form id="dynamicGuestForm" class="p-6 sm:p-8 space-y-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap <span class="text-red-500">*</span></label>
-                        <input type="text" name="nama" required placeholder="Contoh: Hendra Setiawan"
+                        <input type="text" name="nama" required placeholder="Contoh: Romi pauji"
                             class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition">
                     </div>
 
@@ -291,7 +291,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
-        &copy; <span id="year"></span> PT Lampung Bay Seafood &bull; Bandar Lampung.
+        &copy; <span id="year"></span> PT Lampung Bay Seafood &bull; Lampung.
     </footer>
 
     <script>
@@ -303,12 +303,12 @@
                 id: 'departemen_tujuan',
                 label: 'Departemen Tujuan',
                 type: 'select',
-                options: ['Procurement / Ikan & Udang', 'Quality Control & Lab', 'Produksi & Cold Storage', 'HRD & Personalia', 'Direksi'],
+                options: ['Procurement / Warehouse', 'Quality Control & Lab', 'Produksi & Cold Storage', 'HRD & Personalia', 'Direksi'],
                 required: true
             },
             {
                 id: 'staf_ditemui',
-                label: 'Nama Pejabat / Staf yang Ditemui',
+                label: 'Nama Staf yang Ditemui',
                 type: 'text',
                 options: [],
                 required: true
@@ -393,7 +393,7 @@
         }
 
         function openAdminPrompt() {
-            const pin = prompt("Masukkan PIN Administrator (Default: 1234):");
+            const pin = prompt("Masukkan PIN Administrator:");
             if (pin === ADMIN_PIN) {
                 switchView('admin');
             } else if (pin !== null) {
