@@ -599,8 +599,8 @@
             lucide.createIcons();
         });
 
-        // FUNGSI SELESAI / CHECK-OUT (MENGISI JAM KELUAR OTOMATIS)
-        function markAsFinished(index) {
+        // FUNGSI SELESAI / CHECK-OUT (MENGISI JAM KELUAR OTOMATIS & SINKRON KE GOOGLE SHEET)
+        async function markAsFinished(index) {
             const now = new Date();
             const timeOutOnly = formatWaktuIndonesia(now);
             
@@ -609,6 +609,28 @@
                 guestRecords[realIdx].jam_keluar = timeOutOnly;
                 localStorage.setItem('lbs_guests_data', JSON.stringify(guestRecords));
                 applyFilter();
+
+                // Kirim pembaruan jam_keluar ke Google Spreadsheet
+                if (GOOGLE_SCRIPT_URL) {
+                    try {
+                        const updatePayload = {
+                            action: "update_checkout",
+                            nama: guestRecords[realIdx].nama,
+                            tanggal: guestRecords[realIdx].tanggal,
+                            timestamp: guestRecords[realIdx].timestamp,
+                            jam_keluar: timeOutOnly
+                        };
+                        await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updatePayload)
+                        });
+                    } catch (err) {
+                        console.error("Gagal sinkron check-out ke spreadsheet:", err);
+                    }
+                }
+
                 alert(`Tamu ${guestRecords[realIdx].nama} telah selesai (Check-out) pada jam ${timeOutOnly}`);
             }
         }
@@ -1161,7 +1183,7 @@
 
                 rY += 15;
                 doc.rect(107, rY, 73, 11);
-                doc.line(107, rY, 137, rY + 11);
+                doc.line(137, rY, 137, rY + 11);
                 doc.setFontSize(7.5);
                 doc.text("No ID Card", 122, rY + 7, { align: "center" });
                 doc.setFontSize(8.5);
@@ -1200,7 +1222,7 @@
 
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak Form F.HRD.20 (PDF)`;
+                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak (PDF)`;
                 lucide.createIcons();
             }
         }
