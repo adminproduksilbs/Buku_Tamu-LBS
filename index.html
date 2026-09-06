@@ -398,7 +398,7 @@
 
         document.getElementById('year').innerText = new Date().getFullYear();
 
-        // FORMAT WAKTU INDONESIA (WIB / JAKARTA)
+        // FORMAT WAKTU INDONESIA (WIB / JAKARTA) - FORMAT HH:MM
         function formatWaktuIndonesia(dateObj) {
             return dateObj.toLocaleTimeString('id-ID', {
                 timeZone: 'Asia/Jakarta',
@@ -551,7 +551,7 @@
             const now = new Date();
             
             const slashDate = formatTanggalIndonesia(now);
-            const timeInOnly = formatWaktuIndonesia(now);
+            const timeInOnly = formatWaktuIndonesia(now); // Format HH:MM
             const waktuLengkap = `${slashDate} ${timeInOnly}`;
 
             const payload = {
@@ -599,10 +599,10 @@
             lucide.createIcons();
         });
 
-        // FUNGSI SELESAI / CHECK-OUT
+        // FUNGSI SELESAI / CHECK-OUT (FORMAT JAM KELUAR HH:MM)
         async function markAsFinished(index) {
             const now = new Date();
-            const timeOutOnly = formatWaktuIndonesia(now);
+            const timeOutOnly = formatWaktuIndonesia(now); // Format HH:MM
             
             const realIdx = guestRecords.length - 1 - index;
             if (guestRecords[realIdx]) {
@@ -1194,7 +1194,6 @@
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN TAMU", 143.5, rY + 5, { align: "center" });
 
-                // Ambil tanda tangan dari data form dinamis
                 let sigImage = g.tanda_tangan || g.signature;
                 if (!sigImage) {
                     const sigField = formFields.find(f => f.type === 'signature');
