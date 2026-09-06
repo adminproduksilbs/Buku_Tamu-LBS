@@ -196,7 +196,7 @@
                             <button type="button" onclick="exportToExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
                             </button>
-                            <button type="button" onclick="exportToPDF()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <button type="button" id="btnExportPdf" onclick="exportToPDF()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                                 <i data-lucide="file-text" class="w-4 h-4"></i> Cetak Form F.HRD.20 (PDF)
                             </button>
                         </div>
@@ -520,7 +520,7 @@
             return str;
         }
 
-        // SUBMIT FORM TAMU (WAKTU DAN JAM MASUK TERCATAT OTOMATIS)
+        // SUBMIT FORM TAMU
         document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             if (!hasSignature) {
@@ -536,7 +536,6 @@
             const formData = new FormData(this);
             const now = new Date();
             
-            // Format Otomatis
             const slashDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
             const timeInOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const waktuLengkap = `${slashDate} ${timeInOnly}`;
@@ -884,36 +883,52 @@
             XLSX.writeFile(workbook, `Buku_Tamu_PT_LBS_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
-        // CETAK FORM RESMI F.HRD.20 DENGAN LOGO ASLI (BASE64 CANVAS)
-        function exportToPDF() {
+        // FUNGSI LOAD IMAGE ASINKRON KHUSUS WEB GITHUB PAGES
+        function loadImageAsync(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = img.naturalWidth || img.width;
+                        canvas.height = img.naturalHeight || img.height;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL("image/png"));
+                    } catch (e) {
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => resolve(null);
+                img.src = url;
+            });
+        }
+
+        // CETAK FORM RESMI F.HRD.20 ASINKRON (OPTIMAL UNTUK GITHUB PAGES)
+        async function exportToPDF() {
             if (currentlyFilteredGuests.length === 0) {
                 alert("Tidak ada data untuk diekspor!");
                 return;
             }
 
+            const btn = document.getElementById('btnExportPdf');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menyiapkan Dokumen PDF...`;
+                lucide.createIcons();
+            }
+
+            // Muat file logo.png secara asinkron dari hosting GitHub
+            let logoBase64 = await loadImageAsync("logo.png");
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-            // Ekstrak gambar logo ke base64 agar pasti tercetak di PDF
-            let logoBase64 = null;
-            const imgElement = document.getElementById('mainLogoImg');
-            if (imgElement && imgElement.naturalWidth > 0) {
-                try {
-                    const c = document.createElement('canvas');
-                    c.width = imgElement.naturalWidth;
-                    c.height = imgElement.naturalHeight;
-                    const cCtx = c.getContext('2d');
-                    cCtx.drawImage(imgElement, 0, 0);
-                    logoBase64 = c.toDataURL('image/png');
-                } catch (e) {
-                    console.warn("Logo fallback ke teks:", e);
-                }
-            }
 
             currentlyFilteredGuests.forEach((g, idx) => {
                 if (idx > 0) doc.addPage();
 
-                // 1. KOTAK BINGKAI LUAR HEADER (F.HRD.20)[cite: 1]
+                // 1. KOTAK BINGKAI LUAR HEADER (F.HRD.20)
                 doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.35);
 
@@ -928,18 +943,9 @@
 
                 doc.rect(14, 38, 182, 5);
 
-                // --- LOGO ASLI PERUSAHAAN DI KOP ---[cite: 1]
+                // LOGO ASLI PERUSAHAAN (KOP KIRI)[cite: 1]
                 if (logoBase64) {
-                    doc.addImage(logoBase64, 'PNG', 21, 13, 18, 18);
-                } else if (imgElement && imgElement.src) {
-                    try {
-                        doc.addImage(imgElement.src, 'PNG', 21, 13, 18, 18);
-                    } catch(err) {
-                        doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(18);
-                        doc.setTextColor(30, 58, 138);
-                        doc.text("lbs", 24, 23);
-                    }
+                    doc.addImage(logoBase64, 'PNG', 22.5, 13.5, 17, 17);
                 } else {
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(18);
@@ -950,8 +956,8 @@
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(6.5);
                 doc.setTextColor(0, 0, 0);
-                doc.text("PT. Lampung Bay", 19, 33);
-                doc.text("Seafood", 24, 36.5);
+                doc.text("PT. Lampung Bay", 31, 33, { align: "center" });
+                doc.text("Seafood", 31, 36.5, { align: "center" });
 
                 // Kotak Alamat Bawah Kop[cite: 1]
                 doc.setFontSize(6.5);
@@ -1045,7 +1051,6 @@
                 doc.text("Date", 40, bY + 8.5, { align: "center" });
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
-                // FORMAT TANGGAL OTOMATIS (DD/MM/YYYY)
                 doc.text(formatTanggalSlash(g.tanggal || g.timestamp), 57, bY + 7);
 
                 bY += 15;
@@ -1091,7 +1096,6 @@
                 doc.text("Jam Masuk", 122, rY + 4, { align: "center" });
                 doc.text("Jam Keluar", 122, rY + 9.5, { align: "center" });
                 doc.setFontSize(8);
-                // FORMAT JAM MASUK OTOMATIS (HH:MM)
                 doc.text(formatJamMasuk(g.jam_masuk || g.timestamp), 142, rY + 4);
                 doc.text("-", 142, rY + 9.5);
 
@@ -1127,6 +1131,12 @@
             });
 
             doc.save(`Form_F_HRD_20_Penerimaan_Tamu_${new Date().toISOString().slice(0, 10)}.pdf`);
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak Form F.HRD.20 (PDF)`;
+                lucide.createIcons();
+            }
         }
 
         function toggleOptionInput() {
