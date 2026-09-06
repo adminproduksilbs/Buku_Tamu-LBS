@@ -546,6 +546,7 @@
                 timestamp: waktuLengkap,
                 tanggal: slashDate,
                 jam_masuk: timeInOnly,
+                jam_keluar: '-', // Default kosong sebelum klik selesai
                 nama: formData.get('nama'),
                 instansi: formData.get('instansi'),
                 telepon: formData.get('telepon'),
@@ -583,6 +584,21 @@
             btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> SIMPAN & Dapatkan Visitor Pass`;
             lucide.createIcons();
         });
+
+        // FUNGSI SELESAI / BARCODE CHECK-OUT (MENGISI JAM KELUAR OTOMATIS)
+        function markAsFinished(index) {
+            const now = new Date();
+            const timeOutOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            // Hitung index asli dari array (karena tampilan tabel dibalik/reverse)
+            const realIdx = guestRecords.length - 1 - index;
+            if (guestRecords[realIdx]) {
+                guestRecords[realIdx].jam_keluar = timeOutOnly;
+                localStorage.setItem('lbs_guests_data', JSON.stringify(guestRecords));
+                applyFilter();
+                alert(`Tamu ${guestRecords[realIdx].nama} telah selesai (Check-out) pada jam ${timeOutOnly}`);
+            }
+        }
 
         function showVisitorPass(data) {
             document.getElementById('passNama').innerText = data.nama || '-';
@@ -818,10 +834,12 @@
             if (!thead || !tbody) return;
 
             let headerHTML = `
-                <th class="py-3 px-4">Waktu</th>
+                <th class="py-3 px-4">Waktu Check-in</th>
                 <th class="py-3 px-4">Nama Tamu</th>
                 <th class="py-3 px-4">Instansi</th>
-                <th class="py-3 px-4">No. HP</th>
+                <th class="py-3 px-4">Jam Masuk</th>
+                <th class="py-3 px-4">Jam Keluar</th>
+                <th class="py-3 px-4 text-center">Aksi / Selesai</th>
             `;
             formFields.forEach(f => { headerHTML += `<th class="py-3 px-4 whitespace-nowrap">${f.label}</th>`; });
             thead.innerHTML = headerHTML;
@@ -831,7 +849,7 @@
                 if (empty) empty.classList.remove('hidden');
             } else {
                 if (empty) empty.classList.add('hidden');
-                data.slice().reverse().forEach(record => {
+                data.slice().reverse().forEach((record, index) => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
                     let customCols = '';
@@ -840,11 +858,20 @@
                         customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${val}">${val}</td>`;
                     });
 
+                    const jMasuk = record.jam_masuk || '-';
+                    const jKeluar = record.jam_keluar && record.jam_keluar !== '-' ? record.jam_keluar : '-';
+
                     tr.innerHTML = `
                         <td class="py-3 px-4 text-xs font-mono text-slate-500 whitespace-nowrap">${formatDisplayDateTime(record.timestamp)}</td>
                         <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${record.nama || '-'}</td>
                         <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${record.instansi || '-'}</td>
-                        <td class="py-3 px-4 text-slate-600 font-mono text-xs whitespace-nowrap">${record.telepon || '-'}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-blue-600 font-bold whitespace-nowrap">${jMasuk}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-rose-600 font-bold whitespace-nowrap">${jKeluar}</td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <button type="button" onclick="markAsFinished(${index})" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-semibold rounded-lg shadow cursor-pointer transition">
+                                Selesai (Check-out)
+                            </button>
+                        </td>
                         ${customCols}
                     `;
                     tbody.appendChild(tr);
@@ -872,7 +899,7 @@
         function exportToExcel() {
             if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const excelRows = currentlyFilteredGuests.map((g, idx) => {
-                const row = { "No": idx + 1, "Waktu": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "No. HP": g.telepon };
+                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": g.jam_masuk || '-', "Jam Keluar": g.jam_keluar || '-' };
                 formFields.forEach(f => { row[f.label] = g[f.id] !== undefined ? g[f.id] : '-'; });
                 return row;
             });
@@ -883,7 +910,7 @@
             XLSX.writeFile(workbook, `Buku_Tamu_PT_LBS_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
-        // FUNGSI LOAD IMAGE ASINKRON KHUSUS WEB GITHUB PAGES
+        // FUNGSI LOAD IMAGE ASINKRON UNTUK GITHUB PAGES
         function loadImageAsync(url) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -905,7 +932,22 @@
             });
         }
 
-        // CETAK FORM RESMI F.HRD.20 ASINKRON (OPTIMAL UNTUK GITHUB PAGES)
+        // FUNGSI GAMBAR VEKTOR LOGO CADANGAN
+        function drawVectorLogo(doc, x, y, s) {
+            doc.setDrawColor(207, 142, 32);
+            doc.setLineWidth(0.9);
+            doc.line(x + 3.5, y + 1.5, x + s, y + 1.5);
+            doc.line(x + s, y + 1.5, x + s, y + s);
+            doc.line(x + s, y + s, x + 1.5, y + s);
+            doc.line(x + 3.5, y + 1.5, x + 3.5, y + 4.5);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.setTextColor(30, 58, 138);
+            doc.text("lbs", x + (s / 2), y + (s / 2) + 2.5, { align: "center" });
+        }
+
+        // CETAK FORM RESMI F.HRD.20 DENGAN JAM KELUAR & TANDA TANGAN TAMU OTOMATIS
         async function exportToPDF() {
             if (currentlyFilteredGuests.length === 0) {
                 alert("Tidak ada data untuk diekspor!");
@@ -919,7 +961,6 @@
                 lucide.createIcons();
             }
 
-            // Muat file logo.png secara asinkron dari hosting GitHub
             let logoBase64 = await loadImageAsync("logo.png");
 
             const { jsPDF } = window.jspdf;
@@ -943,14 +984,11 @@
 
                 doc.rect(14, 38, 182, 5);
 
-                // LOGO ASLI PERUSAHAAN (KOP KIRI)[cite: 1]
+                // --- LOGO KOP KIRI ---
                 if (logoBase64) {
                     doc.addImage(logoBase64, 'PNG', 22.5, 13.5, 17, 17);
                 } else {
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(18);
-                    doc.setTextColor(30, 58, 138);
-                    doc.text("lbs", 24, 23);
+                    drawVectorLogo(doc, 22.5, 13.5, 17);
                 }
 
                 doc.setFont('helvetica', 'normal');
@@ -1097,7 +1135,7 @@
                 doc.text("Jam Keluar", 122, rY + 9.5, { align: "center" });
                 doc.setFontSize(8);
                 doc.text(formatJamMasuk(g.jam_masuk || g.timestamp), 142, rY + 4);
-                doc.text("-", 142, rY + 9.5);
+                doc.text(g.jam_keluar && g.jam_keluar !== '-' ? g.jam_keluar : '-', 142, rY + 9.5);
 
                 rY += 15;
                 doc.rect(107, rY, 73, 11);
@@ -1113,6 +1151,7 @@
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN TAMU", 143.5, rY + 5, { align: "center" });
 
+                // Tanda tangan digital tamu langsung dari form[cite: 1]
                 if (g.signature && g.signature.startsWith('data:image')) {
                     try {
                         doc.addImage(g.signature, 'PNG', 121.5, rY + 7.5, 44, 15);
