@@ -394,9 +394,26 @@
         } catch(e) { guestRecords = []; }
 
         let currentlyFilteredGuests = [...guestRecords];
-        let activeSignatures = {}; // Menyimpan data URL canvas tanda tangan berdasarkan field ID
+        let activeSignatures = {};
 
         document.getElementById('year').innerText = new Date().getFullYear();
+
+        // FORMAT WAKTU INDONESIA (WIB / JAKARTA)
+        function formatWaktuIndonesia(dateObj) {
+            return dateObj.toLocaleTimeString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(/\./g, ':');
+        }
+
+        function formatTanggalIndonesia(dateObj) {
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const y = dateObj.getFullYear();
+            return `${d}/${m}/${y}`;
+        }
 
         // INISIALISASI CANVAS TANDA TANGAN DINAMIS
         function initSignaturePad(canvasId) {
@@ -482,7 +499,6 @@
             document.getElementById('placeholder_' + canvasId)?.classList.remove('hidden');
         };
 
-        // FORMAT TANGGAL DAN WAKTU
         function extractISODate(dateVal) {
             if (!dateVal) return '';
             const str = String(dateVal).trim();
@@ -491,20 +507,6 @@
             const matchSlash = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
             if (matchSlash) return `${matchSlash[3]}-${matchSlash[2].padStart(2, '0')}-${matchSlash[1].padStart(2, '0')}`;
             return '';
-        }
-
-        function formatTanggalSlash(val) {
-            if (!val) return '-';
-            const str = String(val).trim();
-            const matchIso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-            if (matchIso) {
-                return `${matchIso[3].padStart(2, '0')}/${matchIso[2].padStart(2, '0')}/${matchIso[1]}`;
-            }
-            const matchSlash = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-            if (matchSlash) {
-                return `${matchSlash[1].padStart(2, '0')}/${matchSlash[2].padStart(2, '0')}/${matchSlash[3]}`;
-            }
-            return str;
         }
 
         function formatJamMasuk(val) {
@@ -533,7 +535,6 @@
         document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // Validasi tanda tangan jika ada field tipe signature yang wajib diisi
             for (let f of formFields) {
                 if (f.type === 'signature' && f.required && !activeSignatures['sig_' + f.id]) {
                     alert(`Harap lengkapi tanda tangan pada bagian: "${f.label}"!`);
@@ -549,15 +550,15 @@
             const formData = new FormData(this);
             const now = new Date();
             
-            const slashDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-            const timeInOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const slashDate = formatTanggalIndonesia(now);
+            const timeInOnly = formatWaktuIndonesia(now);
             const waktuLengkap = `${slashDate} ${timeInOnly}`;
 
             const payload = {
                 timestamp: waktuLengkap,
                 tanggal: slashDate,
                 jam_masuk: timeInOnly,
-                jam_keluar: '-', // Diatur kosong (-) saat pertama simpan
+                jam_keluar: '-',
                 nama: formData.get('nama'),
                 instansi: formData.get('instansi'),
                 telepon: formData.get('telepon')
@@ -577,7 +578,6 @@
             if (GOOGLE_SCRIPT_URL) {
                 try {
                     const cloudPayload = { ...payload };
-                    // Hapus string base64 tanda tangan yang terlalu panjang untuk payload JSON sederhana jika perlu
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -602,7 +602,7 @@
         // FUNGSI SELESAI / CHECK-OUT (MENGISI JAM KELUAR OTOMATIS)
         function markAsFinished(index) {
             const now = new Date();
-            const timeOutOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const timeOutOnly = formatWaktuIndonesia(now);
             
             const realIdx = guestRecords.length - 1 - index;
             if (guestRecords[realIdx]) {
@@ -662,7 +662,6 @@
             fetchFromSpreadsheet();
         }
 
-        // KONTROL PIN MODAL
         function showPinModal() {
             const modal = document.getElementById('modalPinPrompt');
             const input = document.getElementById('inputPinField');
@@ -694,7 +693,6 @@
             }
         }
 
-        // FUNGSI GANTI VIEW
         function switchView(mode) {
             const guestView = document.getElementById('viewGuest');
             const adminView = document.getElementById('viewAdmin');
@@ -1114,7 +1112,7 @@
                 doc.text("Date", 40, bY + 8.5, { align: "center" });
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
-                doc.text(formatTanggalSlash(g.tanggal || g.timestamp), 57, bY + 7);
+                doc.text(formatTanggalIndonesia(new Date(g.tanggal || g.timestamp)), 57, bY + 7);
 
                 bY += 15;
                 doc.rect(25, bY, 52, 11);
@@ -1175,7 +1173,6 @@
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN TAMU", 143.5, rY + 5, { align: "center" });
 
-                // Cari gambar tanda tangan dari field dinamis bertipe signature
                 let sigImage = g.tanda_tangan || g.signature;
                 if (!sigImage) {
                     const sigField = formFields.find(f => f.type === 'signature');
@@ -1270,7 +1267,6 @@
             lucide.createIcons();
         }
 
-        // Inisialisasi awal
         renderGuestForm();
         lucide.createIcons();
     </script>
