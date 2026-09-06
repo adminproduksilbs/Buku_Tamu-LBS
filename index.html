@@ -16,6 +16,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .canvas-container { touch-action: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
@@ -24,7 +25,6 @@
     <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <!-- LOGO BADGE PUTIH BERSIH LBS -->
                 <div class="h-11 w-11 rounded-xl bg-white flex items-center justify-center border-2 border-amber-400 shadow-md p-1 shrink-0 overflow-hidden">
                     <img src="logo.png" alt="Logo LBS" class="h-full w-full object-contain mix-blend-multiply" onerror="this.onerror=null; this.src='https://placehold.co/100x100/ffffff/1e3a8a?text=LBS';">
                 </div>
@@ -83,10 +83,26 @@
                     <!-- Dynamic Fields Container -->
                     <div id="dynamicFieldsContainer" class="space-y-4 pt-1"></div>
 
+                    <!-- FITUR 3: TANDA TANGAN DIGITAL (CANVAS PAD) -->
+                    <div class="pt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-700">Tanda Tangan Digital <span class="text-red-500">*</span></label>
+                            <button type="button" onclick="clearSignature()" class="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Hapus & Ulangi
+                            </button>
+                        </div>
+                        <div class="canvas-container relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50">
+                            <canvas id="signaturePad" class="w-full h-32 block cursor-crosshair"></canvas>
+                            <span id="sigPlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs pointer-events-none">
+                                Goreskan tanda tangan dengan jari di sini
+                            </span>
+                        </div>
+                    </div>
+
                     <div class="pt-4">
                         <button type="submit" id="btnSubmitGuest"
-                            class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
-                            <i data-lucide="send" class="w-4 h-4"></i> Simpan
+                            class="w-full py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i> Check-in & Dapatkan Visitor Pass
                         </button>
                     </div>
                 </form>
@@ -95,7 +111,6 @@
 
         <!-- 2. VIEW MODE ADMIN (DASHBOARD & FORM BUILDER) -->
         <div id="viewAdmin" class="hidden space-y-6">
-
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">Dashboard Administrator</h2>
@@ -121,27 +136,21 @@
             <div id="tabLogs" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                            <i data-lucide="users" class="w-6 h-6"></i>
-                        </div>
+                        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="users" class="w-6 h-6"></i></div>
                         <div>
                             <p class="text-xs font-medium text-slate-500">Total Tamu</p>
                             <h3 id="statTotal" class="text-2xl font-bold text-slate-800">0</h3>
                         </div>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="p-3 bg-cyan-50 text-cyan-600 rounded-xl">
-                            <i data-lucide="calendar" class="w-6 h-6"></i>
-                        </div>
+                        <div class="p-3 bg-cyan-50 text-cyan-600 rounded-xl"><i data-lucide="calendar" class="w-6 h-6"></i></div>
                         <div>
                             <p class="text-xs font-medium text-slate-500">Kunjungan Hari Ini</p>
                             <h3 id="statToday" class="text-2xl font-bold text-slate-800">0</h3>
                         </div>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                            <i data-lucide="filter" class="w-6 h-6"></i>
-                        </div>
+                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="filter" class="w-6 h-6"></i></div>
                         <div>
                             <p class="text-xs font-medium text-slate-500">Hasil Filter</p>
                             <h3 id="statFiltered" class="text-2xl font-bold text-slate-800">0</h3>
@@ -154,18 +163,18 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Dari Tanggal</label>
-                            <input type="date" id="filterStartDate" onchange="applyFilter()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50 focus:bg-white">
+                            <input type="date" id="filterStartDate" onchange="applyFilter()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-slate-50">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Sampai Tanggal</label>
-                            <input type="date" id="filterEndDate" onchange="applyFilter()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50 focus:bg-white">
+                            <input type="date" id="filterEndDate" onchange="applyFilter()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-slate-50">
                         </div>
                         <div class="lg:col-span-2">
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Cari Tamu / Perusahaan</label>
                             <div class="relative">
                                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                                <input type="text" id="filterKeyword" oninput="applyFilter()" placeholder="Ketik nama, instansi, staf, no hp untuk mencari..." 
-                                    class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50 focus:bg-white">
+                                <input type="text" id="filterKeyword" oninput="applyFilter()" placeholder="Ketik nama, instansi, staf..." 
+                                    class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-slate-50">
                             </div>
                         </div>
                     </div>
@@ -185,10 +194,10 @@
 
                         <div class="flex items-center gap-2">
                             <button onclick="exportToExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel (.xlsx)
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
                             </button>
                             <button onclick="exportToPDF()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF (.pdf)
+                                <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
                             </button>
                         </div>
                     </div>
@@ -226,30 +235,25 @@
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Teks Pertanyaan / Label *</label>
                                 <input type="text" id="newFieldLabel" required placeholder="Contoh: No Plat Kendaraan" 
-                                    class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
-
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Input *</label>
-                                <select id="newFieldType" onchange="toggleOptionInput()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                                <select id="newFieldType" onchange="toggleOptionInput()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
                                     <option value="text">Teks Singkat</option>
                                     <option value="textarea">Teks Panjang</option>
                                     <option value="select">Dropdown Pilihan</option>
                                     <option value="number">Angka</option>
                                 </select>
                             </div>
-
                             <div id="optionsContainer" class="hidden">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Pilihan Dropdown (Pisahkan koma)</label>
-                                <input type="text" id="newFieldOptions" placeholder="Contoh: Mobil, Motor, Truk Kontainer" 
-                                    class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <input type="text" id="newFieldOptions" placeholder="Contoh: Mobil, Motor, Truk" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
                             </div>
-
                             <div class="flex items-center gap-2 pt-1">
-                                <input type="checkbox" id="newFieldRequired" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                                <input type="checkbox" id="newFieldRequired" class="w-4 h-4 text-blue-600 rounded">
                                 <label for="newFieldRequired" class="text-xs font-medium text-slate-700">Wajib Diisi Tamu</label>
                             </div>
-
                             <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs sm:text-sm transition flex items-center justify-center gap-2">
                                 <i data-lucide="plus" class="w-4 h-4"></i> Pasang di Formulir & Sheet
                             </button>
@@ -268,7 +272,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: KONEKSI GOOGLE SHEET & UPDATE TOKEN WA (FITUR TAMBAHAN) -->
+            <!-- TAB 3: KONEKSI GOOGLE SHEET & CONFIG -->
             <div id="tabConfig" class="hidden max-w-2xl bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="settings" class="w-5 h-5 text-blue-600"></i> Pengaturan Koneksi & Token WhatsApp
@@ -276,35 +280,75 @@
                 <p class="text-xs text-slate-500">
                     Sistem sudah terhubung permanen ke Google Spreadsheet perusahaan. Anda tetap bisa mengganti Token Fonnte atau Nomor WhatsApp penerima di bawah ini kapan saja.
                 </p>
-                
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Web App URL Google Apps Script</label>
-                    <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
-                        class="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none bg-slate-50">
+                    <input type="text" id="scriptUrlInput" class="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-300 rounded-xl bg-slate-50">
                 </div>
-
                 <div class="pt-2 border-t border-slate-100">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Token Fonnte Baru</label>
-                    <input type="text" id="fonnteTokenInput" placeholder="Masukkan token Fonnte jika ingin diganti"
-                        class="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    <input type="text" id="fonnteTokenInput" placeholder="Masukkan token Fonnte jika ingin diganti" class="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-300 rounded-xl">
                 </div>
-
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor WhatsApp Penerima Baru</label>
-                    <input type="text" id="waTujuanInput" placeholder="628xxxxxxxxxx,628xxxxxxxxxx (Pisahkan koma)"
-                        class="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor WhatsApp Penerima Internal</label>
+                    <input type="text" id="waTujuanInput" placeholder="628xxxxxxxxxx,628xxxxxxxxxx (Pisahkan koma)" class="w-full px-3.5 py-2.5 text-xs font-mono border border-slate-300 rounded-xl">
                 </div>
-
                 <div class="pt-2">
                     <button onclick="saveAllConfig()" id="btnSaveConfig" class="py-2.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs transition flex items-center gap-2 shadow-sm">
                         <i data-lucide="save" class="w-4 h-4"></i> Simpan Pengaturan
                     </button>
                 </div>
             </div>
-
         </div>
-
     </main>
+
+    <!-- FITUR 1: MODAL POP-UP VISITOR PASS DIGITAL -->
+    <div id="modalVisitorPass" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+            <!-- Header Badge -->
+            <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 text-white text-center relative">
+                <div class="inline-block px-3 py-1 bg-amber-400 text-slate-900 rounded-full text-[10px] font-bold tracking-wider uppercase mb-2">
+                    Official Visitor Pass
+                </div>
+                <h3 class="text-base font-bold tracking-tight">PT LAMPUNG BAY SEAFOOD</h3>
+                <p class="text-[11px] text-blue-200">Izin Akses Masuk Kawasan Pabrik</p>
+            </div>
+
+            <!-- Body Badge -->
+            <div class="p-6 text-center space-y-4">
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase text-slate-400">Nama Pengunjung</span>
+                        <h4 id="passNama" class="text-base font-bold text-slate-800">-</h4>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Instansi</span>
+                            <span id="passInstansi" class="font-semibold text-slate-700">-</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Tujuan Divisi</span>
+                            <span id="passTujuan" class="font-semibold text-slate-700">-</span>
+                        </div>
+                    </div>
+                    <div class="pt-1 border-t border-slate-200/60 text-[11px] text-slate-500">
+                        <span>Waktu Masuk: </span><b id="passWaktu" class="text-slate-700">-</b>
+                    </div>
+                </div>
+
+                <!-- QR Code Verifikasi Otomatis -->
+                <div class="flex flex-col items-center justify-center pt-1">
+                    <img id="passQRCode" src="" alt="QR Code" class="w-32 h-32 border p-1 rounded-xl bg-white shadow-sm">
+                    <p class="text-[10px] text-slate-400 mt-2">Tunjukkan kartu ini kepada Petugas Keamanan / Resepsionis</p>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="closeVisitorPass()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Selesai & Tutup Kartu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
         &copy; <span id="year"></span> PT Lampung Bay Seafood &bull; Lampung.
@@ -312,32 +356,13 @@
 
     <script>
         const ADMIN_PIN = "1234";
-        // URL DATABASE UTAMA PERUSAHAAN (LANGSUNG AKTIF DI SEMUA PERANGKAT)
         const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbWZI2qrvoiGIky6HYtpSguBE_88CXxK4qiurN8TsjDyQ5sDk6DG1DuHC3y8hd6Lnl0w/exec";
         let GOOGLE_SCRIPT_URL = localStorage.getItem('lbs_script_url') || DEFAULT_SCRIPT_URL;
 
         const defaultFields = [
-            {
-                id: 'departemen_tujuan',
-                label: 'Departemen Tujuan',
-                type: 'select',
-                options: ['Procurement / Warehouse', 'Quality Control & Lab', 'Produksi & Cold Storage', 'HRD & Personalia', 'Direksi'],
-                required: true
-            },
-            {
-                id: 'staf_ditemui',
-                label: 'Nama Staf yang Ditemui',
-                type: 'text',
-                options: [],
-                required: true
-            },
-            {
-                id: 'keperluan_kunjungan',
-                label: 'Keperluan Kunjungan',
-                type: 'textarea',
-                options: [],
-                required: true
-            }
+            { id: 'departemen_tujuan', label: 'Departemen Tujuan', type: 'select', options: ['Procurement / Warehouse', 'Quality Control & Lab', 'Produksi & Cold Storage', 'HRD & Personalia', 'Direksi'], required: true },
+            { id: 'staf_ditemui', label: 'Nama Staf yang Ditemui', type: 'text', options: [], required: true },
+            { id: 'keperluan_kunjungan', label: 'Keperluan Kunjungan', type: 'textarea', options: [], required: true }
         ];
 
         let formFields = JSON.parse(localStorage.getItem('lbs_form_fields')) || defaultFields;
@@ -346,18 +371,74 @@
 
         document.getElementById('year').innerText = new Date().getFullYear();
 
+        // LOGIKA TANDA TANGAN DIGITAL (CANVAS)
+        const canvas = document.getElementById('signaturePad');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let hasSignature = false;
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.strokeStyle = "#1e3a8a";
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 300);
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            hasSignature = true;
+            document.getElementById('sigPlaceholder').classList.add('hidden');
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function moveDraw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDraw() { isDrawing = false; }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', moveDraw);
+        window.addEventListener('mouseup', stopDraw);
+
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', moveDraw, { passive: false });
+        window.addEventListener('touchend', stopDraw);
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false;
+            document.getElementById('sigPlaceholder').classList.remove('hidden');
+        }
+
         function extractISODate(dateVal) {
             if (!dateVal) return '';
             const str = String(dateVal).trim();
             const matchIso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
             if (matchIso) return `${matchIso[1]}-${matchIso[2]}-${matchIso[3]}`;
             const matchSlash = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-            if (matchSlash) {
-                const day = matchSlash[1].padStart(2, '0');
-                const month = matchSlash[2].padStart(2, '0');
-                const year = matchSlash[3];
-                return `${year}-${month}-${day}`;
-            }
+            if (matchSlash) return `${matchSlash[3]}-${matchSlash[2].padStart(2, '0')}-${matchSlash[1].padStart(2, '0')}`;
             return '';
         }
 
@@ -367,23 +448,88 @@
             if (str.includes('T')) {
                 const d = new Date(str);
                 if (!isNaN(d.getTime())) {
-                    const tgl = d.toLocaleDateString('id-ID');
-                    const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                    return `${tgl} ${jam}`;
+                    return `${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
                 }
             }
             return str;
+        }
+
+        // SUBMIT FORM TAMU
+        document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!hasSignature) {
+                alert("Harap bubuhkan tanda tangan Anda terlebih dahulu pada kotak yang disediakan!");
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitGuest');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menyimpan Data & Menyiapkan Kartu...`;
+            lucide.createIcons();
+
+            const formData = new FormData(this);
+            const now = new Date();
+            const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const waktuLengkap = `${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+
+            const payload = {
+                timestamp: waktuLengkap,
+                tanggal: isoDate,
+                nama: formData.get('nama'),
+                instansi: formData.get('instansi'),
+                telepon: formData.get('telepon')
+            };
+
+            formFields.forEach(f => {
+                payload[f.id] = formData.get(f.id) || '-';
+            });
+
+            guestRecords.push(payload);
+            localStorage.setItem('lbs_guests_data', JSON.stringify(guestRecords));
+
+            if (GOOGLE_SCRIPT_URL) {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (err) {
+                    console.error("Gagal sinkron:", err);
+                }
+            }
+
+            // TAMPILKAN MODAL VISITOR PASS
+            showVisitorPass(payload);
+
+            this.reset();
+            clearSignature();
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Check-in & Dapatkan Visitor Pass`;
+            lucide.createIcons();
+        });
+
+        function showVisitorPass(data) {
+            document.getElementById('passNama').innerText = data.nama || '-';
+            document.getElementById('passInstansi').innerText = data.instansi || '-';
+            document.getElementById('passTujuan').innerText = data.departemen_tujuan || '-';
+            document.getElementById('passWaktu').innerText = data.timestamp || '-';
+
+            const qrData = encodeURIComponent(`PT LBS VISITOR PASS | ${data.nama} | ${data.instansi} | ${data.timestamp}`);
+            document.getElementById('passQRCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
+
+            document.getElementById('modalVisitorPass').classList.remove('hidden');
+        }
+
+        function closeVisitorPass() {
+            document.getElementById('modalVisitorPass').classList.add('hidden');
         }
 
         async function saveAllConfig() {
             const url = document.getElementById('scriptUrlInput').value.trim() || DEFAULT_SCRIPT_URL;
             const token = document.getElementById('fonnteTokenInput').value.trim();
             const wa = document.getElementById('waTujuanInput').value.trim();
-
-            if (!url.startsWith('https://script.google.com')) {
-                alert("URL Google Apps Script tidak valid! Pastikan diawali dengan https://script.google.com");
-                return;
-            }
 
             GOOGLE_SCRIPT_URL = url;
             localStorage.setItem('lbs_script_url', url);
@@ -398,11 +544,7 @@
                         method: 'POST',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: "update_config",
-                            fonnte_token: token,
-                            wa_tujuan: wa
-                        })
+                        body: JSON.stringify({ action: "update_config", fonnte_token: token, wa_tujuan: wa })
                     });
                     alert("Pengaturan & Token berhasil disimpan ke Google Spreadsheet!");
                 } catch(e) {
@@ -414,7 +556,6 @@
             } else {
                 alert("URL Spreadsheet berhasil disimpan!");
             }
-
             fetchFromSpreadsheet();
         }
 
@@ -430,6 +571,7 @@
                 btnGuest.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5";
                 btnAdmin.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5";
                 renderGuestForm();
+                setTimeout(resizeCanvas, 150);
             } else {
                 guestView.classList.add('hidden');
                 adminView.classList.remove('hidden');
@@ -437,18 +579,15 @@
                 btnGuest.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5";
                 applyFilter();
                 renderBuilderList();
-                fetchFromSpreadsheet(); // Otomatis sync data saat buka admin
+                fetchFromSpreadsheet();
             }
             lucide.createIcons();
         }
 
         function openAdminPrompt() {
             const pin = prompt("Masukkan PIN Administrator:");
-            if (pin === ADMIN_PIN) {
-                switchView('admin');
-            } else if (pin !== null) {
-                alert("PIN salah! Akses ditolak.");
-            }
+            if (pin === ADMIN_PIN) switchView('admin');
+            else if (pin !== null) alert("PIN salah! Akses ditolak.");
         }
 
         function switchAdminTab(tab) {
@@ -507,61 +646,8 @@
             });
         }
 
-        document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitGuest');
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menyimpan...`;
-            lucide.createIcons();
-
-            const formData = new FormData(this);
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const isoDate = `${year}-${month}-${day}`;
-
-            const dateStr = now.toLocaleDateString('id-ID');
-            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-            const payload = {
-                timestamp: `${dateStr} ${timeStr}`,
-                tanggal: isoDate,
-                nama: formData.get('nama'),
-                instansi: formData.get('instansi'),
-                telepon: formData.get('telepon')
-            };
-
-            formFields.forEach(f => {
-                payload[f.id] = formData.get(f.id) || '-';
-            });
-
-            guestRecords.push(payload);
-            localStorage.setItem('lbs_guests_data', JSON.stringify(guestRecords));
-
-            if (GOOGLE_SCRIPT_URL) {
-                try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                } catch (err) {
-                    console.error("Gagal sinkron:", err);
-                }
-            }
-
-            this.reset();
-            btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Simpan`;
-            lucide.createIcons();
-            alert("Data tamu berhasil disimpan!");
-        });
-
         async function fetchFromSpreadsheet() {
             if (!GOOGLE_SCRIPT_URL) return;
-
             document.getElementById('tableInfoText').innerText = "Sedang mengambil data dari Spreadsheet...";
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL);
@@ -576,7 +662,6 @@
             }
         }
 
-        // FUNGSI FILTER & PENCARIAN
         function applyFilter() {
             const startDate = document.getElementById('filterStartDate').value;
             const endDate = document.getElementById('filterEndDate').value;
@@ -585,18 +670,11 @@
 
             currentlyFilteredGuests = guestRecords.filter(item => {
                 const itemDate = extractISODate(item.tanggal) || extractISODate(item.timestamp);
-
                 if (startDate && itemDate && itemDate < startDate) return false;
                 if (endDate && itemDate && itemDate > endDate) return false;
-
                 if (keyword !== '') {
-                    const allValues = Object.values(item)
-                        .map(v => String(v || ''))
-                        .join(' ')
-                        .toLowerCase();
-                    if (!allValues.includes(keyword)) {
-                        return false;
-                    }
+                    const allValues = Object.values(item).map(v => String(v || '')).join(' ').toLowerCase();
+                    if (!allValues.includes(keyword)) return false;
                 }
                 return true;
             });
@@ -623,9 +701,7 @@
                 <th class="py-3 px-4">Instansi</th>
                 <th class="py-3 px-4">No. HP</th>
             `;
-            formFields.forEach(f => {
-                headerHTML += `<th class="py-3 px-4 whitespace-nowrap">${f.label}</th>`;
-            });
+            formFields.forEach(f => { headerHTML += `<th class="py-3 px-4 whitespace-nowrap">${f.label}</th>`; });
             thead.innerHTML = headerHTML;
 
             tbody.innerHTML = '';
@@ -636,7 +712,6 @@
                 data.slice().reverse().forEach(record => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-
                     let customCols = '';
                     formFields.forEach(f => {
                         const val = record[f.id] !== undefined ? record[f.id] : '-';
@@ -655,11 +730,7 @@
             }
 
             const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const todayISO = `${year}-${month}-${day}`;
-
+            const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             document.getElementById('statTotal').innerText = guestRecords.length;
             document.getElementById('statToday').innerText = guestRecords.filter(g => {
                 const d = extractISODate(g.tanggal) || extractISODate(g.timestamp);
@@ -670,39 +741,21 @@
         }
 
         function exportToExcel() {
-            if (currentlyFilteredGuests.length === 0) {
-                alert("Tidak ada data untuk diekspor!");
-                return;
-            }
-
+            if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const excelRows = currentlyFilteredGuests.map((g, idx) => {
-                const row = {
-                    "No": idx + 1,
-                    "Waktu": formatDisplayDateTime(g.timestamp),
-                    "Nama Tamu": g.nama,
-                    "Instansi": g.instansi,
-                    "No. HP": g.telepon
-                };
-                formFields.forEach(f => {
-                    row[f.label] = g[f.id] !== undefined ? g[f.id] : '-';
-                });
+                const row = { "No": idx + 1, "Waktu": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "No. HP": g.telepon };
+                formFields.forEach(f => { row[f.label] = g[f.id] !== undefined ? g[f.id] : '-'; });
                 return row;
             });
-
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Buku Tamu");
             worksheet['!cols'] = Array(Object.keys(excelRows[0]).length).fill({ wch: 22 });
-
             XLSX.writeFile(workbook, `Buku_Tamu_PT_LBS_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
         function exportToPDF() {
-            if (currentlyFilteredGuests.length === 0) {
-                alert("Tidak ada data untuk diekspor!");
-                return;
-            }
-
+            if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -718,15 +771,10 @@
             doc.setTextColor(207, 250, 254);
             doc.text(`Rekapitulasi Kunjungan Buku Tamu | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 18, 26);
 
-            const tableHeaders = [
-                ['No', 'Waktu', 'Nama Tamu', 'Instansi', 'No. HP', ...formFields.map(f => f.label)]
-            ];
-
+            const tableHeaders = [['No', 'Waktu', 'Nama Tamu', 'Instansi', 'No. HP', ...formFields.map(f => f.label)]];
             const tableBody = currentlyFilteredGuests.map((g, idx) => {
                 const row = [idx + 1, formatDisplayDateTime(g.timestamp), g.nama, g.instansi, g.telepon];
-                formFields.forEach(f => {
-                    row.push(g[f.id] !== undefined ? g[f.id] : '-');
-                });
+                formFields.forEach(f => { row.push(g[f.id] !== undefined ? g[f.id] : '-'); });
                 return row;
             });
 
@@ -739,7 +787,6 @@
                 bodyStyles: { fontSize: 7.5 },
                 margin: { left: 14, right: 14 }
             });
-
             doc.save(`Laporan_Buku_Tamu_${new Date().toISOString().slice(0, 10)}.pdf`);
         }
 
@@ -756,15 +803,10 @@
             const type = document.getElementById('newFieldType').value;
             const isReq = document.getElementById('newFieldRequired').checked;
             const fieldId = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
-
-            let options = [];
-            if (type === 'select') {
-                options = document.getElementById('newFieldOptions').value.split(',').map(s => s.trim()).filter(Boolean);
-            }
+            let options = type === 'select' ? document.getElementById('newFieldOptions').value.split(',').map(s => s.trim()).filter(Boolean) : [];
 
             formFields.push({ id: fieldId, label, type, options, required: isReq });
             localStorage.setItem('lbs_form_fields', JSON.stringify(formFields));
-
             this.reset();
             toggleOptionInput();
             renderBuilderList();
@@ -790,7 +832,6 @@
                     <span class="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[10px] font-bold uppercase">Locked</span>
                 </div>
             `;
-
             formFields.forEach((field, index) => {
                 const item = document.createElement('div');
                 item.className = "p-3.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:border-blue-300 transition shadow-sm";
@@ -811,7 +852,7 @@
         renderGuestForm();
         applyFilter();
         lucide.createIcons();
-        fetchFromSpreadsheet(); // Tarik data sheet otomatis saat halaman dimuat
+        fetchFromSpreadsheet();
     </script>
 </body>
 </html>
