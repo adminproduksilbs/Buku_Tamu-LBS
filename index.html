@@ -57,7 +57,7 @@
                 <div class="p-6 bg-gradient-to-r from-blue-900 to-indigo-900 text-white">
                     <span class="inline-block px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-medium rounded-md mb-2">Check-in Pengunjung Pabrik</span>
                     <h2 class="text-2xl font-bold">Buku Tamu Digital</h2>
-                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood (F.HRD.20)[cite: 1].</p>
+                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood (F.HRD.20).</p>
                 </div>
 
                 <form id="dynamicGuestForm" class="p-6 sm:p-8 space-y-4">
@@ -82,22 +82,6 @@
 
                     <!-- Dynamic Fields Container -->
                     <div id="dynamicFieldsContainer" class="space-y-4 pt-1"></div>
-
-                    <!-- TANDA TANGAN DIGITAL (CANVAS PAD) -->
-                    <div class="pt-2">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-semibold text-slate-700">Tanda Tangan Tamu / Visitor Signature <span class="text-red-500">*</span></label>
-                            <button type="button" onclick="clearSignature()" class="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Hapus & Ulangi
-                            </button>
-                        </div>
-                        <div class="canvas-container relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50">
-                            <canvas id="signaturePad" class="w-full h-32 block cursor-crosshair"></canvas>
-                            <span id="sigPlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs pointer-events-none">
-                                Goreskan tanda tangan dengan jari di sini
-                            </span>
-                        </div>
-                    </div>
 
                     <div class="pt-4">
                         <button type="submit" id="btnSubmitGuest"
@@ -244,6 +228,7 @@
                                     <option value="textarea">Teks Panjang</option>
                                     <option value="select">Dropdown Pilihan</option>
                                     <option value="number">Angka</option>
+                                    <option value="signature">Tanda Tangan Digital (Canvas)</option>
                                 </select>
                             </div>
                             <div id="optionsContainer" class="hidden">
@@ -390,7 +375,8 @@
             { id: 'keperluan_kunjungan', label: 'Maksud Kunjungan / Purpose of Visit', type: 'textarea', options: [], required: true },
             { id: 'janji', label: 'Sudah Ada Janji / Belum (Appointment)', type: 'select', options: ['Sudah Janji', 'Belum Ada Janji'], required: true },
             { id: 'jumlah_orang', label: 'Jumlah Orang / How Many People', type: 'number', options: [], required: false },
-            { id: 'no_kendaraan', label: 'No. Kendaraan / Vehicle Number', type: 'text', options: [], required: false }
+            { id: 'no_kendaraan', label: 'No. Kendaraan / Vehicle Number', type: 'text', options: [], required: false },
+            { id: 'tanda_tangan', label: 'Tanda Tangan Tamu', type: 'signature', options: [], required: true }
         ];
 
         let storedFields = localStorage.getItem('lbs_form_fields');
@@ -408,70 +394,93 @@
         } catch(e) { guestRecords = []; }
 
         let currentlyFilteredGuests = [...guestRecords];
+        let activeSignatures = {}; // Menyimpan data URL canvas tanda tangan berdasarkan field ID
 
         document.getElementById('year').innerText = new Date().getFullYear();
 
-        // CANVAS TANDA TANGAN DIGITAL
-        const canvas = document.getElementById('signaturePad');
-        const ctx = canvas.getContext('2d');
-        let isDrawing = false;
-        let hasSignature = false;
-
-        function resizeCanvas() {
+        // INISIALISASI CANVAS TANDA TANGAN DINAMIS
+        function initSignaturePad(canvasId) {
+            const canvas = document.getElementById(canvasId);
             if (!canvas) return;
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
-            ctx.scale(ratio, ratio);
-            ctx.strokeStyle = "#1e3a8a";
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+
+            function resize() {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                ctx.scale(ratio, ratio);
+                ctx.strokeStyle = "#1e3a8a";
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+            }
+            resize();
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                document.getElementById('placeholder_' + canvasId)?.classList.add('hidden');
+                e.preventDefault();
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                e.preventDefault();
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDrawing) {
+                    isDrawing = false;
+                    activeSignatures[canvasId] = canvas.toDataURL("image/png");
+                }
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                isDrawing = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                document.getElementById('placeholder_' + canvasId)?.classList.add('hidden');
+                e.preventDefault();
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                e.preventDefault();
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                if (isDrawing) {
+                    isDrawing = false;
+                    activeSignatures[canvasId] = canvas.toDataURL("image/png");
+                }
+            });
         }
 
-        window.addEventListener('resize', resizeCanvas);
-        setTimeout(resizeCanvas, 300);
-
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        }
-
-        function startDraw(e) {
-            isDrawing = true;
-            hasSignature = true;
-            document.getElementById('sigPlaceholder').classList.add('hidden');
-            const pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-            e.preventDefault();
-        }
-
-        function moveDraw(e) {
-            if (!isDrawing) return;
-            const pos = getPos(e);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            e.preventDefault();
-        }
-
-        function stopDraw() { isDrawing = false; }
-
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', moveDraw);
-        window.addEventListener('mouseup', stopDraw);
-
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', moveDraw, { passive: false });
-        window.addEventListener('touchend', stopDraw);
-
-        function clearSignature() {
+        window.clearSpecificSignature = function(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            hasSignature = false;
-            document.getElementById('sigPlaceholder').classList.remove('hidden');
-        }
+            delete activeSignatures[canvasId];
+            document.getElementById('placeholder_' + canvasId)?.classList.remove('hidden');
+        };
 
         // FORMAT TANGGAL DAN WAKTU
         function extractISODate(dateVal) {
@@ -523,9 +532,13 @@
         // SUBMIT FORM TAMU
         document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            if (!hasSignature) {
-                alert("Harap bubuhkan tanda tangan Anda terlebih dahulu pada kotak yang disediakan!");
-                return;
+
+            // Validasi tanda tangan jika ada field tipe signature yang wajib diisi
+            for (let f of formFields) {
+                if (f.type === 'signature' && f.required && !activeSignatures['sig_' + f.id]) {
+                    alert(`Harap lengkapi tanda tangan pada bagian: "${f.label}"!`);
+                    return;
+                }
             }
 
             const btn = document.getElementById('btnSubmitGuest');
@@ -540,21 +553,22 @@
             const timeInOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const waktuLengkap = `${slashDate} ${timeInOnly}`;
 
-            const signatureDataUrl = canvas.toDataURL("image/png");
-
             const payload = {
                 timestamp: waktuLengkap,
                 tanggal: slashDate,
                 jam_masuk: timeInOnly,
-                jam_keluar: '-',
+                jam_keluar: '-', // Diatur kosong (-) saat pertama simpan
                 nama: formData.get('nama'),
                 instansi: formData.get('instansi'),
-                telepon: formData.get('telepon'),
-                signature: signatureDataUrl
+                telepon: formData.get('telepon')
             };
 
             formFields.forEach(f => {
-                payload[f.id] = formData.get(f.id) || '-';
+                if (f.type === 'signature') {
+                    payload[f.id] = activeSignatures['sig_' + f.id] || '-';
+                } else {
+                    payload[f.id] = formData.get(f.id) || '-';
+                }
             });
 
             guestRecords.push(payload);
@@ -563,8 +577,7 @@
             if (GOOGLE_SCRIPT_URL) {
                 try {
                     const cloudPayload = { ...payload };
-                    delete cloudPayload.signature;
-
+                    // Hapus string base64 tanda tangan yang terlalu panjang untuk payload JSON sederhana jika perlu
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -579,7 +592,8 @@
             showVisitorPass(payload);
 
             this.reset();
-            clearSignature();
+            activeSignatures = {};
+            renderGuestForm();
             btn.disabled = false;
             btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> SIMPAN & Dapatkan Visitor Pass`;
             lucide.createIcons();
@@ -693,7 +707,6 @@
                 if (btnGuest) btnGuest.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer";
                 if (btnAdmin) btnAdmin.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer";
                 renderGuestForm();
-                setTimeout(resizeCanvas, 150);
             } else {
                 if (guestView) guestView.classList.add('hidden');
                 if (adminView) adminView.classList.remove('hidden');
@@ -744,6 +757,7 @@
             const container = document.getElementById('dynamicFieldsContainer');
             if (!container) return;
             container.innerHTML = '';
+            activeSignatures = {};
 
             formFields.forEach(field => {
                 const wrapper = document.createElement('div');
@@ -765,6 +779,25 @@
                             ${opts}
                         </select>
                     `;
+                } else if (field.type === 'signature') {
+                    const canvasId = 'sig_' + field.id;
+                    inputHtml = `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[11px] text-slate-500">Gunakan jari untuk tanda tangan</span>
+                                <button type="button" onclick="clearSpecificSignature('${canvasId}')" class="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 cursor-pointer">
+                                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Hapus & Ulangi
+                                </button>
+                            </div>
+                            <div class="canvas-container relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50">
+                                <canvas id="${canvasId}" class="w-full h-32 block cursor-crosshair"></canvas>
+                                <span id="placeholder_${canvasId}" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs pointer-events-none">
+                                    Goreskan tanda tangan di sini
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(() => initSignaturePad(canvasId), 100);
                 }
 
                 wrapper.innerHTML = `
@@ -773,6 +806,7 @@
                 `;
                 container.appendChild(wrapper);
             });
+            lucide.createIcons();
         }
 
         async function fetchFromSpreadsheet() {
@@ -853,8 +887,11 @@
                     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
                     let customCols = '';
                     formFields.forEach(f => {
-                        const val = record[f.id] !== undefined ? record[f.id] : '-';
-                        customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${val}">${val}</td>`;
+                        let val = record[f.id] !== undefined ? record[f.id] : '-';
+                        if (f.type === 'signature' && val.startsWith('data:image')) {
+                            val = `<img src="${val}" class="h-8 object-contain border rounded bg-white p-0.5">`;
+                        }
+                        customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate">${val}</td>`;
                     });
 
                     const jMasuk = formatJamMasuk(record.jam_masuk || record.timestamp);
@@ -899,7 +936,7 @@
             if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const excelRows = currentlyFilteredGuests.map((g, idx) => {
                 const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": formatJamMasuk(g.jam_masuk || g.timestamp), "Jam Keluar": g.jam_keluar || '-' };
-                formFields.forEach(f => { row[f.label] = g[f.id] !== undefined ? g[f.id] : '-'; });
+                formFields.forEach(f => { row[f.label] = f.type === 'signature' ? '[Tanda Tangan]' : (g[f.id] !== undefined ? g[f.id] : '-'); });
                 return row;
             });
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
@@ -909,7 +946,6 @@
             XLSX.writeFile(workbook, `Buku_Tamu_PT_LBS_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
-        // FUNGSI LOAD IMAGE ASINKRON UNTUK GITHUB PAGES
         function loadImageAsync(url) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -931,7 +967,6 @@
             });
         }
 
-        // FUNGSI GAMBAR VEKTOR LOGO CADANGAN
         function drawVectorLogo(doc, x, y, s) {
             doc.setDrawColor(207, 142, 32);
             doc.setLineWidth(0.9);
@@ -946,7 +981,6 @@
             doc.text("lbs", x + (s / 2), y + (s / 2) + 2.5, { align: "center" });
         }
 
-        // CETAK FORM RESMI F.HRD.20 ASINKRON (OPTIMAL UNTUK GITHUB PAGES)
         async function exportToPDF() {
             if (currentlyFilteredGuests.length === 0) {
                 alert("Tidak ada data untuk diekspor!");
@@ -968,7 +1002,6 @@
             currentlyFilteredGuests.forEach((g, idx) => {
                 if (idx > 0) doc.addPage();
 
-                // 1. KOTAK BINGKAI LUAR HEADER (F.HRD.20)[cite: 1]
                 doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.35);
 
@@ -983,7 +1016,6 @@
 
                 doc.rect(14, 38, 182, 5);
 
-                // --- LOGO ASLI PERUSAHAAN (KOP KIRI) ---[cite: 1]
                 if (logoBase64) {
                     doc.addImage(logoBase64, 'PNG', 22.5, 13.5, 17, 17);
                 } else {
@@ -996,16 +1028,13 @@
                 doc.text("PT. Lampung Bay", 31, 33, { align: "center" });
                 doc.text("Seafood", 31, 36.5, { align: "center" });
 
-                // Kotak Alamat Bawah Kop[cite: 1]
                 doc.setFontSize(6.5);
                 doc.text("Jl. Raya Tanjung Bintang No. 101 Desa Serdang Kec. Tanjung Bintang", 16, 41.5);
 
-                // Judul Tengah[cite: 1]
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(14);
                 doc.text("Penerimaan Tamu", 97, 26, { align: "center" });
 
-                // Atribut Dokumen Kanan[cite: 1]
                 doc.setFontSize(5.5);
                 doc.setFont('helvetica', 'normal');
                 doc.text("Document No.", 147.5, 15);
@@ -1031,7 +1060,6 @@
                 doc.setFont('helvetica', 'bold');
                 doc.text("19 Januari 2026", 173, 36);
 
-                // 2. ISIAN DATA DENGAN MODEL GARIS BAWAH (1 - 6)[cite: 1]
                 const items = [
                     { no: "1.", id: "Nama Pengunjung", en: "Name of Visitor", val: g.nama || "" },
                     { no: "2.", id: "Alamat", en: "Address", val: g.alamat || "" },
@@ -1075,10 +1103,8 @@
                     curY += (it.id.includes("\n") || it.en.includes("\n")) ? 16 : 13.5;
                 });
 
-                // 3. KOTAK-KOTAK BAGIAN BAWAH (2 KOLOM)[cite: 1]
                 let bY = 142;
 
-                // --- KOLOM KIRI ---[cite: 1]
                 doc.rect(25, bY, 52, 11);
                 doc.line(55, bY, 55, bY + 11);
                 doc.setFont('helvetica', 'normal');
@@ -1122,7 +1148,6 @@
                 doc.setFontSize(7);
                 doc.text("( Petugas Keamanan )", 51, bY + 25, { align: "center" });
 
-                // --- KOLOM KANAN ---[cite: 1]
                 let rY = 142;
 
                 doc.rect(107, rY, 73, 11);
@@ -1138,7 +1163,7 @@
 
                 rY += 15;
                 doc.rect(107, rY, 73, 11);
-                doc.line(137, rY, 137, rY + 11);
+                doc.line(107, rY, 137, rY + 11);
                 doc.setFontSize(7.5);
                 doc.text("No ID Card", 122, rY + 7, { align: "center" });
                 doc.setFontSize(8.5);
@@ -1150,9 +1175,14 @@
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN TAMU", 143.5, rY + 5, { align: "center" });
 
-                // Ambil data tanda tangan dari variabel signature atau tanda_tangan[cite: 1]
-                const sigImage = g.signature || g.tanda_tangan;
-                if (sigImage && sigImage.startsWith('data:image')) {
+                // Cari gambar tanda tangan dari field dinamis bertipe signature
+                let sigImage = g.tanda_tangan || g.signature;
+                if (!sigImage) {
+                    const sigField = formFields.find(f => f.type === 'signature');
+                    if (sigField && g[sigField.id]) sigImage = g[sigField.id];
+                }
+
+                if (sigImage && typeof sigImage === 'string' && sigImage.startsWith('data:image')) {
                     try {
                         doc.addImage(sigImage, 'PNG', 121.5, rY + 7.5, 44, 15);
                     } catch(e) {}
@@ -1198,6 +1228,7 @@
             this.reset();
             toggleOptionInput();
             renderBuilderList();
+            renderGuestForm();
             alert("Pertanyaan berhasil ditambahkan!");
         });
 
@@ -1206,6 +1237,7 @@
                 formFields = formFields.filter(f => f.id !== id);
                 localStorage.setItem('lbs_form_fields', JSON.stringify(formFields));
                 renderBuilderList();
+                renderGuestForm();
             }
         }
 
