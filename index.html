@@ -509,9 +509,23 @@
             return '';
         }
 
+        // PEMBERSIH FORMAT JAM AGAR SELALU TAMPIL HH:MM DARI GOOGLE SHEETS
         function formatJamMasuk(val) {
-            if (!val) return '-';
+            if (!val || val === '-') return '-';
             const str = String(val).trim();
+            
+            if (str.includes('T') || str.includes('1899-')) {
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleTimeString('id-ID', {
+                        timeZone: 'Asia/Jakarta',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(/\./g, ':');
+                }
+            }
+
             const matchTime = str.match(/(\d{1,2})[:\.](\d{2})/);
             if (matchTime) {
                 return `${matchTime[1].padStart(2, '0')}:${matchTime[2]}`;
@@ -551,7 +565,7 @@
             const now = new Date();
             
             const slashDate = formatTanggalIndonesia(now);
-            const timeInOnly = formatWaktuIndonesia(now); // Format HH:MM
+            const timeInOnly = formatWaktuIndonesia(now);
             const waktuLengkap = `${slashDate} ${timeInOnly}`;
 
             const payload = {
@@ -599,10 +613,10 @@
             lucide.createIcons();
         });
 
-        // FUNGSI SELESAI / CHECK-OUT (FORMAT JAM KELUAR HH:MM)
+        // FUNGSI SELESAI / CHECK-OUT
         async function markAsFinished(index) {
             const now = new Date();
-            const timeOutOnly = formatWaktuIndonesia(now); // Format HH:MM
+            const timeOutOnly = formatWaktuIndonesia(now);
             
             const realIdx = guestRecords.length - 1 - index;
             if (guestRecords[realIdx]) {
@@ -913,8 +927,9 @@
                         customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate">${val}</td>`;
                     });
 
-                    const jMasuk = formatJamMasuk(record.jam_masuk || record.timestamp);
-                    const jKeluar = record.jam_keluar && record.jam_keluar !== '-' ? record.jam_keluar : '-';
+                    // Menggunakan formatJamMasuk untuk memastikan format HH:MM bersih
+                    const jMasuk = formatJamMasuk(record.jam_masuk);
+                    const jKeluar = formatJamMasuk(record.jam_keluar);
 
                     tr.innerHTML = `
                         <td class="py-3 px-4 text-xs font-mono text-slate-500 whitespace-nowrap">${formatDisplayDateTime(record.timestamp)}</td>
@@ -954,7 +969,7 @@
         function exportToExcel() {
             if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const excelRows = currentlyFilteredGuests.map((g, idx) => {
-                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": formatJamMasuk(g.jam_masuk || g.timestamp), "Jam Keluar": g.jam_keluar || '-' };
+                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": formatJamMasuk(g.jam_masuk), "Jam Keluar": formatJamMasuk(g.jam_keluar) };
                 formFields.forEach(f => { row[f.label] = f.type === 'signature' ? '[Tanda Tangan]' : (g[f.id] !== undefined ? g[f.id] : '-'); });
                 return row;
             });
@@ -1177,8 +1192,8 @@
                 doc.text("Jam Masuk", 122, rY + 4, { align: "center" });
                 doc.text("Jam Keluar", 122, rY + 9.5, { align: "center" });
                 doc.setFontSize(8);
-                doc.text(g.jam_masuk && g.jam_masuk !== '-' ? g.jam_masuk : '-', 142, rY + 4);
-                doc.text(g.jam_keluar && g.jam_keluar !== '-' ? g.jam_keluar : '-', 142, rY + 9.5);
+                doc.text(formatJamMasuk(g.jam_masuk), 142, rY + 4);
+                doc.text(formatJamMasuk(g.jam_keluar), 142, rY + 9.5);
 
                 rY += 15;
                 doc.rect(107, rY, 73, 11);
