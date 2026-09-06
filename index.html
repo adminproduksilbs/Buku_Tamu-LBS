@@ -509,7 +509,7 @@
             return '';
         }
 
-        // PEMBERSIH FORMAT JAM AGAR SELALU TAMPIL HH:MM DARI GOOGLE SHEETS
+        // PEMBERSIH FORMAT JAM AGAR SELALU TAMPIL HH:MM BERSIH
         function formatJamMasuk(val) {
             if (!val || val === '-') return '-';
             const str = String(val).trim();
@@ -613,7 +613,7 @@
             lucide.createIcons();
         });
 
-        // FUNGSI SELESAI / CHECK-OUT
+        // FUNGSI SELESAI / CHECK-OUT (UPDATE BARIS YANG SAMA DI GOOGLE SHEETS)
         async function markAsFinished(index) {
             const now = new Date();
             const timeOutOnly = formatWaktuIndonesia(now);
@@ -927,7 +927,6 @@
                         customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate">${val}</td>`;
                     });
 
-                    // Menggunakan formatJamMasuk untuk memastikan format HH:MM bersih
                     const jMasuk = formatJamMasuk(record.jam_masuk);
                     const jKeluar = formatJamMasuk(record.jam_keluar);
 
