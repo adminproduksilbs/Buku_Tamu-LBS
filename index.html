@@ -57,7 +57,7 @@
                 <div class="p-6 bg-gradient-to-r from-blue-900 to-indigo-900 text-white">
                     <span class="inline-block px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-medium rounded-md mb-2">Check-in Pengunjung Pabrik</span>
                     <h2 class="text-2xl font-bold">Buku Tamu Digital</h2>
-                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood (F.HRD.20).</p>
+                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood (F.HRD.20)[cite: 1].</p>
                 </div>
 
                 <form id="dynamicGuestForm" class="p-6 sm:p-8 space-y-4">
@@ -546,7 +546,7 @@
                 timestamp: waktuLengkap,
                 tanggal: slashDate,
                 jam_masuk: timeInOnly,
-                jam_keluar: '-', // Default kosong sebelum klik selesai
+                jam_keluar: '-',
                 nama: formData.get('nama'),
                 instansi: formData.get('instansi'),
                 telepon: formData.get('telepon'),
@@ -585,12 +585,11 @@
             lucide.createIcons();
         });
 
-        // FUNGSI SELESAI / BARCODE CHECK-OUT (MENGISI JAM KELUAR OTOMATIS)
+        // FUNGSI SELESAI / CHECK-OUT (MENGISI JAM KELUAR OTOMATIS)
         function markAsFinished(index) {
             const now = new Date();
             const timeOutOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             
-            // Hitung index asli dari array (karena tampilan tabel dibalik/reverse)
             const realIdx = guestRecords.length - 1 - index;
             if (guestRecords[realIdx]) {
                 guestRecords[realIdx].jam_keluar = timeOutOnly;
@@ -858,7 +857,7 @@
                         customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${val}">${val}</td>`;
                     });
 
-                    const jMasuk = record.jam_masuk || '-';
+                    const jMasuk = formatJamMasuk(record.jam_masuk || record.timestamp);
                     const jKeluar = record.jam_keluar && record.jam_keluar !== '-' ? record.jam_keluar : '-';
 
                     tr.innerHTML = `
@@ -899,7 +898,7 @@
         function exportToExcel() {
             if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const excelRows = currentlyFilteredGuests.map((g, idx) => {
-                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": g.jam_masuk || '-', "Jam Keluar": g.jam_keluar || '-' };
+                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": formatJamMasuk(g.jam_masuk || g.timestamp), "Jam Keluar": g.jam_keluar || '-' };
                 formFields.forEach(f => { row[f.label] = g[f.id] !== undefined ? g[f.id] : '-'; });
                 return row;
             });
@@ -947,7 +946,7 @@
             doc.text("lbs", x + (s / 2), y + (s / 2) + 2.5, { align: "center" });
         }
 
-        // CETAK FORM RESMI F.HRD.20 DENGAN JAM KELUAR & TANDA TANGAN TAMU OTOMATIS
+        // CETAK FORM RESMI F.HRD.20 ASINKRON (OPTIMAL UNTUK GITHUB PAGES)
         async function exportToPDF() {
             if (currentlyFilteredGuests.length === 0) {
                 alert("Tidak ada data untuk diekspor!");
@@ -969,7 +968,7 @@
             currentlyFilteredGuests.forEach((g, idx) => {
                 if (idx > 0) doc.addPage();
 
-                // 1. KOTAK BINGKAI LUAR HEADER (F.HRD.20)
+                // 1. KOTAK BINGKAI LUAR HEADER (F.HRD.20)[cite: 1]
                 doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.35);
 
@@ -984,7 +983,7 @@
 
                 doc.rect(14, 38, 182, 5);
 
-                // --- LOGO KOP KIRI ---
+                // --- LOGO ASLI PERUSAHAAN (KOP KIRI) ---[cite: 1]
                 if (logoBase64) {
                     doc.addImage(logoBase64, 'PNG', 22.5, 13.5, 17, 17);
                 } else {
@@ -1151,10 +1150,11 @@
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN TAMU", 143.5, rY + 5, { align: "center" });
 
-                // Tanda tangan digital tamu langsung dari form[cite: 1]
-                if (g.signature && g.signature.startsWith('data:image')) {
+                // Ambil data tanda tangan dari variabel signature atau tanda_tangan[cite: 1]
+                const sigImage = g.signature || g.tanda_tangan;
+                if (sigImage && sigImage.startsWith('data:image')) {
                     try {
-                        doc.addImage(g.signature, 'PNG', 121.5, rY + 7.5, 44, 15);
+                        doc.addImage(sigImage, 'PNG', 121.5, rY + 7.5, 44, 15);
                     } catch(e) {}
                 }
                 doc.setFontSize(7);
