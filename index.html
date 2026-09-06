@@ -57,7 +57,7 @@
                 <div class="p-6 bg-gradient-to-r from-blue-900 to-indigo-900 text-white">
                     <span class="inline-block px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-medium rounded-md mb-2">Check-in Pengunjung Pabrik</span>
                     <h2 class="text-2xl font-bold">Buku Tamu Digital</h2>
-                    <p class="text-xs text-blue-200 mt-1">Selamat datang di PT Lampung Bay Seafood. Silakan lengkapi data kunjungan berikut.</p>
+                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood (F.HRD.20).</p>
                 </div>
 
                 <form id="dynamicGuestForm" class="p-6 sm:p-8 space-y-4">
@@ -69,7 +69,7 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Instansi / Perusahaan / Company <span class="text-red-500">*</span></label>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Instansi / Perusahaan (Company) <span class="text-red-500">*</span></label>
                             <input type="text" name="instansi" required placeholder="Contoh: CV Samudera / Pribadi"
                                 class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition">
                         </div>
@@ -102,7 +102,7 @@
                     <div class="pt-4">
                         <button type="submit" id="btnSubmitGuest"
                             class="w-full py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
-                            <i data-lucide="send" class="w-4 h-4"></i> Check-in & Dapatkan Visitor Pass
+                            <i data-lucide="send" class="w-4 h-4"></i> SIMPAN & Dapatkan Visitor Pass
                         </button>
                     </div>
                 </form>
@@ -173,7 +173,7 @@
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Cari Tamu / Perusahaan</label>
                             <div class="relative">
                                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                                <input type="text" id="filterKeyword" oninput="applyFilter()" placeholder="Ketik nama, instansi, staf..." 
+                                <input type="text" id="filterKeyword" oninput="applyFilter()" placeholder="Ketik nama, instansi, staf, no kendaraan..." 
                                     class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-slate-50">
                             </div>
                         </div>
@@ -234,7 +234,7 @@
                         <form id="addFieldForm" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Teks Pertanyaan / Label *</label>
-                                <input type="text" id="newFieldLabel" required placeholder="Contoh: No Plat Kendaraan" 
+                                <input type="text" id="newFieldLabel" required placeholder="Contoh: No Loker / Kartu Parkir" 
                                     class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
@@ -356,13 +356,14 @@
         const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbWZI2qrvoiGIky6HYtpSguBE_88CXxK4qiurN8TsjDyQ5sDk6DG1DuHC3y8hd6Lnl0w/exec";
         let GOOGLE_SCRIPT_URL = localStorage.getItem('lbs_script_url') || DEFAULT_SCRIPT_URL;
 
+        // FORMULIR STANDAR F.HRD.20
         const defaultFields = [
             { id: 'alamat', label: 'Alamat / Address', type: 'text', options: [], required: false },
             { id: 'departemen_tujuan', label: 'Departemen Tujuan', type: 'select', options: ['Procurement / Warehouse', 'Quality Control & Lab', 'Produksi & Cold Storage', 'HRD & Personalia', 'Direksi'], required: true },
-            { id: 'staf_ditemui', label: 'Nama Staf yang Ditemui / Person to Visit', type: 'text', options: [], required: true },
-            { id: 'keperluan_kunjungan', label: 'Keperluan Kunjungan / Purpose of Visit', type: 'textarea', options: [], required: true },
-            { id: 'janji', label: 'Sudah Ada Janji / Appointment', type: 'select', options: ['Sudah Janji', 'Belum Ada Janji'], required: true },
-            { id: 'jumlah_orang', label: 'Jumlah Orang / Number of People', type: 'number', options: [], required: false },
+            { id: 'staf_ditemui', label: 'Nama yang Dikunjungi / Person to be Visited', type: 'text', options: [], required: true },
+            { id: 'keperluan_kunjungan', label: 'Maksud Kunjungan / Purpose of Visit', type: 'textarea', options: [], required: true },
+            { id: 'janji', label: 'Sudah Ada Janji / Belum (Appointment)', type: 'select', options: ['Sudah Janji', 'Belum Ada Janji'], required: true },
+            { id: 'jumlah_orang', label: 'Jumlah Orang / How Many People', type: 'number', options: [], required: false },
             { id: 'no_kendaraan', label: 'No. Kendaraan / Vehicle Number', type: 'text', options: [], required: false }
         ];
 
@@ -379,6 +380,7 @@
         let hasSignature = false;
 
         function resizeCanvas() {
+            if (!canvas) return;
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
@@ -473,7 +475,6 @@
             const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             const waktuLengkap = `${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
 
-            // Simpan gambar tanda tangan digital ke Base64 Data URL
             const signatureDataUrl = canvas.toDataURL("image/png");
 
             const payload = {
@@ -494,16 +495,15 @@
 
             if (GOOGLE_SCRIPT_URL) {
                 try {
-                    // Hindari kirim base64 gambar yang besar ke Google Sheet agar cell tidak melebihi batas 50.000 karakter
                     const cloudPayload = { ...payload };
                     delete cloudPayload.signature;
 
-                    await fetch(GOOGLE_SCRIPT_URL, {
+                    fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(cloudPayload)
-                    });
+                    }).catch(e => console.log(e));
                 } catch (err) {
                     console.error("Gagal sinkron:", err);
                 }
@@ -514,7 +514,7 @@
             this.reset();
             clearSignature();
             btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Check-in & Dapatkan Visitor Pass`;
+            btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> SIMPAN & Dapatkan Visitor Pass`;
             lucide.createIcons();
         });
 
@@ -567,6 +567,7 @@
             fetchFromSpreadsheet();
         }
 
+        // FUNGSI GANTI TAMPILAN ADMIN (DIBUAT AMAN DAN STABIL)
         function switchView(mode) {
             const guestView = document.getElementById('viewGuest');
             const adminView = document.getElementById('viewAdmin');
@@ -585,23 +586,34 @@
                 adminView.classList.remove('hidden');
                 btnAdmin.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5";
                 btnGuest.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5";
-                applyFilter();
+                
+                // Render komponen admin terlebih dahulu
+                switchAdminTab('logs');
                 renderBuilderList();
-                fetchFromSpreadsheet();
+                
+                // Tarik data secara background tanpa menghalangi UI
+                setTimeout(() => { fetchFromSpreadsheet(); }, 200);
             }
             lucide.createIcons();
         }
 
         function openAdminPrompt() {
             const pin = prompt("Masukkan PIN Administrator:");
-            if (pin === ADMIN_PIN) switchView('admin');
-            else if (pin !== null) alert("PIN salah! Akses ditolak.");
+            if (pin === ADMIN_PIN) {
+                switchView('admin');
+            } else if (pin !== null && pin !== "") {
+                alert("PIN salah! Akses ditolak.");
+            }
         }
 
         function switchAdminTab(tab) {
-            ['tabLogs', 'tabBuilder', 'tabConfig'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['tabLogs', 'tabBuilder', 'tabConfig'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
             ['tabBtnLogs', 'tabBtnBuilder', 'tabBtnConfig'].forEach(id => {
-                document.getElementById(id).className = "px-4 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-2";
+                const el = document.getElementById(id);
+                if (el) el.className = "px-4 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-2";
             });
 
             if (tab === 'logs') {
@@ -622,6 +634,7 @@
 
         function renderGuestForm() {
             const container = document.getElementById('dynamicFieldsContainer');
+            if (!container) return;
             container.innerHTML = '';
 
             formFields.forEach(field => {
@@ -637,7 +650,7 @@
                     inputHtml = `<textarea name="${field.id}" rows="2" ${reqAttr} placeholder="Tuliskan keterangan..." 
                         class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition"></textarea>`;
                 } else if (field.type === 'select') {
-                    const opts = field.options.map(o => `<option value="${o}">${o}</option>`).join('');
+                    const opts = (field.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
                     inputHtml = `
                         <select name="${field.id}" ${reqAttr} class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition bg-white">
                             <option value="">-- Pilih salah satu --</option>
@@ -656,7 +669,8 @@
 
         async function fetchFromSpreadsheet() {
             if (!GOOGLE_SCRIPT_URL) return;
-            document.getElementById('tableInfoText').innerText = "Sedang mengambil data dari Spreadsheet...";
+            const info = document.getElementById('tableInfoText');
+            if (info) info.innerText = "Mengambil data dari Spreadsheet...";
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL);
                 const data = await res.json();
@@ -687,7 +701,8 @@
                 return true;
             });
 
-            document.getElementById('tableInfoText').innerText = `Menampilkan ${currentlyFilteredGuests.length} dari total ${guestRecords.length} data`;
+            const info = document.getElementById('tableInfoText');
+            if (info) info.innerText = `Menampilkan ${currentlyFilteredGuests.length} dari total ${guestRecords.length} data`;
             renderAdminLogs(currentlyFilteredGuests);
         }
 
@@ -702,6 +717,7 @@
             const thead = document.getElementById('tableHeaderRow');
             const tbody = document.getElementById('tableBody');
             const empty = document.getElementById('tableEmpty');
+            if (!thead || !tbody) return;
 
             let headerHTML = `
                 <th class="py-3 px-4">Waktu</th>
@@ -714,9 +730,9 @@
 
             tbody.innerHTML = '';
             if (data.length === 0) {
-                empty.classList.remove('hidden');
+                if (empty) empty.classList.remove('hidden');
             } else {
-                empty.classList.add('hidden');
+                if (empty) empty.classList.add('hidden');
                 data.slice().reverse().forEach(record => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
@@ -775,7 +791,7 @@
             currentlyFilteredGuests.forEach((g, idx) => {
                 if (idx > 0) doc.addPage();
 
-                // 1. HEADER KOTAK FORMULIR ISO (F.HRD.20)[cite: 1]
+                // 1. KOP SURAT / HEADER KOTAK FORMULIR ISO (F.HRD.20)[cite: 1]
                 doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.3);
                 doc.rect(15, 12, 180, 22);
@@ -807,7 +823,7 @@
                 doc.setFont('helvetica', 'italic');
                 doc.text("(VISITOR LOG SHEET)", 102.5, 26, { align: "center" });
 
-                // Kolom Kanan: Identitas Dokumen Terkontrol[cite: 1]
+                // Kolom Kanan: Atribut Dokumen Terkontrol[cite: 1]
                 doc.setFontSize(6.5);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(0, 0, 0);
@@ -825,7 +841,7 @@
                 doc.text("Revised Date / Tgl. Revisi", 137, 32.5);[cite: 1]
                 doc.text("19 Januari 2026", 167, 32.5);[cite: 1]
 
-                // 2. TABEL DAFTAR PERTANYAAN RESMI FORM[cite: 1]
+                // 2. TABEL DAFTAR PERTANYAAN FORM RESMI[cite: 1]
                 const tableData = [
                     ["1.", "Nama Pengunjung / Name of Visitor", `: ${g.nama || '-'}`],[cite: 1]
                     ["2.", "Alamat / Address", `: ${g.alamat || '-'}`],[cite: 1]
@@ -865,7 +881,6 @@
                 doc.setFont('helvetica', 'bold');
                 doc.text("TANDA TANGAN TAMU", 43, finalY + 6, { align: "center" });[cite: 1]
 
-                // Tempelkan gambar tanda tangan digital jika ada
                 if (g.signature && g.signature.startsWith('data:image')) {
                     try {
                         doc.addImage(g.signature, 'PNG', 23, finalY + 8, 40, 20);
@@ -882,7 +897,6 @@
                 doc.text("TANDA TANGAN YANG", 167, finalY + 5, { align: "center" });[cite: 1]
                 doc.text("DIKUNJUNGI", 167, finalY + 8.5, { align: "center" });[cite: 1]
 
-                // Garis bawah nama
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7);
                 doc.text(`( ${g.nama || '......................'} )`, 43, finalY + 34, { align: "center" });
@@ -926,11 +940,12 @@
 
         function renderBuilderList() {
             const list = document.getElementById('fieldsList');
+            if (!list) return;
             list.innerHTML = `
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between opacity-80">
                     <div>
-                        <span class="text-xs font-bold text-slate-800">1. Nama Lengkap, Instansi & Kontak</span>
-                        <p class="text-[11px] text-slate-500">Kolom Baku Spreadsheet</p>
+                        <span class="text-xs font-bold text-slate-800">1. Data Baku F.HRD.20 (Nama, Instansi, Kontak)</span>
+                        <p class="text-[11px] text-slate-500">Standar Audit Mutu ISO</p>
                     </div>
                     <span class="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[10px] font-bold uppercase">Locked</span>
                 </div>
@@ -952,10 +967,9 @@
             lucide.createIcons();
         }
 
+        // Jalankan saat pertama kali dimuat
         renderGuestForm();
-        applyFilter();
         lucide.createIcons();
-        fetchFromSpreadsheet();
     </script>
 </body>
 </html>
