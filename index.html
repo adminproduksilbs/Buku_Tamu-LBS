@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- SheetJS, jsPDF & html2canvas (untuk download kartu) -->
+    <!-- SheetJS, jsPDF & html2canvas -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -357,7 +357,7 @@
 
             <!-- Tombol Aksi di Modal -->
             <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
-                <button type="button" onclick="downloadVisitorCard()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer shadow">
+                <button type="button" onclick="downloadVisitorCard()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
                     <i data-lucide="download" class="w-4 h-4"></i> Simpan Kartu ID (PNG)
                 </button>
                 <button type="button" onclick="closeVisitorPass()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
@@ -407,6 +407,7 @@
 
         document.getElementById('year').innerText = new Date().getFullYear();
 
+        // FORMAT WAKTU INDONESIA (WIB / JAKARTA) - FORMAT HH:MM
         function formatWaktuIndonesia(dateObj) {
             return dateObj.toLocaleTimeString('id-ID', {
                 timeZone: 'Asia/Jakarta',
@@ -551,7 +552,7 @@
             return str;
         }
 
-        // SUBMIT FORM TAMU
+        // SUBMIT FORM TAMU (TANGGAL = HANYA TANGGAL, JAM MASUK = JAM WIB SAAT KLIK SIMPAN)
         document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -570,14 +571,14 @@
             const formData = new FormData(this);
             const now = new Date();
             
-            const slashDate = formatTanggalIndonesia(now);
-            const timeInOnly = formatWaktuIndonesia(now);
-            const waktuLengkap = `${slashDate} ${timeInOnly}`;
+            const slashDate = formatTanggalIndonesia(now); // Hanya Tanggal (DD/MM/YYYY)
+            const timeInOnly = formatWaktuIndonesia(now); // Hanya Jam (HH:MM WIB)
+            const waktuLengkap = `${slashDate} ${timeInOnly}`; // Untuk timestamp log
 
             const payload = {
                 timestamp: waktuLengkap,
-                tanggal: slashDate,
-                jam_masuk: timeInOnly,
+                tanggal: slashDate,       // Kolom Tanggal diisi tanggal saja
+                jam_masuk: timeInOnly,    // Kolom Jam Masuk diisi jam WIB saat klik simpan
                 jam_keluar: '-',
                 nama: formData.get('nama'),
                 instansi: formData.get('instansi'),
@@ -619,7 +620,6 @@
             lucide.createIcons();
         });
 
-        // FUNGSI DOWNLOAD KARTU VISITOR PNG
         function downloadVisitorCard() {
             const cardElement = document.getElementById('visitorCardContent');
             const visitorName = document.getElementById('passNama').innerText.replace(/[^a-zA-Z0-9]/g, '_');
@@ -632,7 +632,6 @@
             });
         }
 
-        // FUNGSI SELESAI / CHECK-OUT
         async function markAsFinished(index) {
             const now = new Date();
             const timeOutOnly = formatWaktuIndonesia(now);
