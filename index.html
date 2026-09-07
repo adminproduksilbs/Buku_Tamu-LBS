@@ -8,10 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- SheetJS & jsPDF -->
+    <!-- SheetJS, jsPDF & html2canvas (untuk download kartu) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -312,48 +313,56 @@
         </div>
     </div>
 
-    <!-- MODAL POP-UP VISITOR PASS DIGITAL -->
+    <!-- MODAL POP-UP VISITOR PASS DIGITAL & DOWNLOAD ID CARD -->
     <div id="modalVisitorPass" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
-            <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 text-white text-center relative">
-                <div class="inline-block px-3 py-1 bg-amber-400 text-slate-900 rounded-full text-[10px] font-bold tracking-wider uppercase mb-2">
-                    Official Visitor Pass
+            
+            <!-- Elemen Kartu yang akan didownload (ID Card Visitor) -->
+            <div id="visitorCardContent" class="bg-white">
+                <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 text-white text-center relative">
+                    <div class="inline-block px-3 py-1 bg-amber-400 text-slate-900 rounded-full text-[10px] font-bold tracking-wider uppercase mb-2">
+                        Official Visitor ID Card
+                    </div>
+                    <h3 class="text-base font-bold tracking-tight">PT LAMPUNG BAY SEAFOOD</h3>
+                    <p class="text-[11px] text-blue-200">Izin Akses Masuk Kawasan Pabrik</p>
                 </div>
-                <h3 class="text-base font-bold tracking-tight">PT LAMPUNG BAY SEAFOOD</h3>
-                <p class="text-[11px] text-blue-200">Izin Akses Masuk Kawasan Pabrik</p>
+
+                <div class="p-6 text-center space-y-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2">
+                        <div>
+                            <span class="text-[10px] font-semibold uppercase text-slate-400">Nama Pengunjung</span>
+                            <h4 id="passNama" class="text-base font-bold text-slate-800">-</h4>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">Instansi</span>
+                                <span id="passInstansi" class="font-semibold text-slate-700">-</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">Tujuan Divisi</span>
+                                <span id="passTujuan" class="font-semibold text-slate-700">-</span>
+                            </div>
+                        </div>
+                        <div class="pt-1 border-t border-slate-200/60 text-[11px] text-slate-500">
+                            <span>Waktu Masuk: </span><b id="passWaktu" class="text-slate-700">-</b>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center pt-1">
+                        <img id="passQRCode" src="" alt="QR Code" class="w-32 h-32 border p-1 rounded-xl bg-white shadow-sm">
+                        <p class="text-[10px] text-slate-400 mt-2 font-mono font-bold text-blue-900" id="passIdNumber">#LBS-001</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="p-6 text-center space-y-4">
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2">
-                    <div>
-                        <span class="text-[10px] font-semibold uppercase text-slate-400">Nama Pengunjung</span>
-                        <h4 id="passNama" class="text-base font-bold text-slate-800">-</h4>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">Instansi</span>
-                            <span id="passInstansi" class="font-semibold text-slate-700">-</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">Tujuan Divisi</span>
-                            <span id="passTujuan" class="font-semibold text-slate-700">-</span>
-                        </div>
-                    </div>
-                    <div class="pt-1 border-t border-slate-200/60 text-[11px] text-slate-500">
-                        <span>Waktu Masuk: </span><b id="passWaktu" class="text-slate-700">-</b>
-                    </div>
-                </div>
-
-                <div class="flex flex-col items-center justify-center pt-1">
-                    <img id="passQRCode" src="" alt="QR Code" class="w-32 h-32 border p-1 rounded-xl bg-white shadow-sm">
-                    <p class="text-[10px] text-slate-400 mt-2">Tunjukkan kartu ini kepada Petugas Keamanan / Resepsionis</p>
-                </div>
-
-                <div class="pt-2">
-                    <button type="button" onclick="closeVisitorPass()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i> Selesai & Tutup Kartu
-                    </button>
-                </div>
+            <!-- Tombol Aksi di Modal -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
+                <button type="button" onclick="downloadVisitorCard()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer shadow">
+                    <i data-lucide="download" class="w-4 h-4"></i> Simpan Kartu ID (PNG)
+                </button>
+                <button type="button" onclick="closeVisitorPass()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Selesai & Tutup Kartu
+                </button>
             </div>
         </div>
     </div>
@@ -398,7 +407,6 @@
 
         document.getElementById('year').innerText = new Date().getFullYear();
 
-        // FORMAT WAKTU INDONESIA (WIB / JAKARTA) - FORMAT HH:MM
         function formatWaktuIndonesia(dateObj) {
             return dateObj.toLocaleTimeString('id-ID', {
                 timeZone: 'Asia/Jakarta',
@@ -415,7 +423,6 @@
             return `${d}/${m}/${y}`;
         }
 
-        // INISIALISASI CANVAS TANDA TANGAN DINAMIS
         function initSignaturePad(canvasId) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -509,7 +516,6 @@
             return '';
         }
 
-        // PEMBERSIH FORMAT JAM AGAR SELALU TAMPIL HH:MM BERSIH
         function formatJamMasuk(val) {
             if (!val || val === '-') return '-';
             const str = String(val).trim();
@@ -603,7 +609,7 @@
                 }
             }
 
-            showVisitorPass(payload);
+            showVisitorPass(payload, guestRecords.length);
 
             this.reset();
             activeSignatures = {};
@@ -613,7 +619,20 @@
             lucide.createIcons();
         });
 
-        // FUNGSI SELESAI / CHECK-OUT (UPDATE BARIS YANG SAMA DI GOOGLE SHEETS)
+        // FUNGSI DOWNLOAD KARTU VISITOR PNG
+        function downloadVisitorCard() {
+            const cardElement = document.getElementById('visitorCardContent');
+            const visitorName = document.getElementById('passNama').innerText.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            html2canvas(cardElement, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Visitor_Pass_${visitorName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // FUNGSI SELESAI / CHECK-OUT
         async function markAsFinished(index) {
             const now = new Date();
             const timeOutOnly = formatWaktuIndonesia(now);
@@ -648,13 +667,16 @@
             }
         }
 
-        function showVisitorPass(data) {
+        function showVisitorPass(data, indexNum) {
             document.getElementById('passNama').innerText = data.nama || '-';
             document.getElementById('passInstansi').innerText = data.instansi || '-';
             document.getElementById('passTujuan').innerText = data.departemen_tujuan || '-';
             document.getElementById('passWaktu').innerText = `${data.tanggal} ${data.jam_masuk || ''}`;
+            
+            const idCardStr = `#LBS-${String(indexNum).padStart(3, '0')}`;
+            document.getElementById('passIdNumber').innerText = idCardStr;
 
-            const qrData = encodeURIComponent(`PT LBS VISITOR PASS | ${data.nama} | ${data.instansi} | ${data.timestamp}`);
+            const qrData = encodeURIComponent(`PT LBS VISITOR PASS | ID: ${idCardStr} | Nama: ${data.nama} | Instansi: ${data.instansi} | Waktu: ${data.timestamp}`);
             document.getElementById('passQRCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
 
             document.getElementById('modalVisitorPass').classList.remove('hidden');
