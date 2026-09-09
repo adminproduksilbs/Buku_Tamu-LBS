@@ -516,7 +516,6 @@
             return '';
         }
 
-        // PEMBERSIH FORMAT JAM UNTUK MENGATASI FORMAT ISO PANJANG DARI SPREADSHEET
         function formatJamMasuk(val) {
             if (!val || val === '-') return '-';
             const str = String(val).trim();
@@ -620,11 +619,27 @@
             lucide.createIcons();
         });
 
-        function downloadVisitorCard() {
+        // PERBAIKAN: Fungsi download kartu visitor pass dengan penantian muat QR code
+        async function downloadVisitorCard() {
             const cardElement = document.getElementById('visitorCardContent');
             const visitorName = document.getElementById('passNama').innerText.replace(/[^a-zA-Z0-9]/g, '_');
             
-            html2canvas(cardElement, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+            const qrImg = document.getElementById('passQRCode');
+            if (qrImg && !qrImg.complete) {
+                await new Promise((resolve) => {
+                    qrImg.onload = resolve;
+                    qrImg.onerror = resolve;
+                });
+            }
+
+            await new Promise(r => setTimeout(r, 150));
+
+            html2canvas(cardElement, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                allowTaint: true
+            }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Visitor_Pass_${visitorName}.png`;
                 link.href = canvas.toDataURL('image/png');
@@ -942,7 +957,7 @@
                     let customCols = '';
                     formFields.forEach(f => {
                         let val = record[f.id] !== undefined ? record[f.id] : '-';
-                        if (f.type === 'signature' && val.startsWith('data:image')) {
+                        if (f.type === 'signature' && typeof val === 'string' && val.startsWith('data:image')) {
                             val = `<img src="${val}" class="h-8 object-contain border rounded bg-white p-0.5">`;
                         }
                         customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate">${val}</td>`;
@@ -1221,7 +1236,9 @@
                 doc.setFontSize(7.5);
                 doc.text("No ID Card", 122, rY + 7, { align: "center" });
                 doc.setFontSize(8.5);
-                doc.text(`#LBS-${String(idx + 1).padStart(3, '0')}`, 142, rY + 7);
+                
+                const globalIndex = guestRecords.indexOf(g) + 1;
+                doc.text(`#LBS-${String(globalIndex).padStart(3, '0')}`, 142, rY + 7);
 
                 rY += 15;
                 doc.rect(107, rY, 73, 26);
@@ -1256,7 +1273,7 @@
 
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak Form F.HRD.20 (PDF)`;
+                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak(PDF)`;
                 lucide.createIcons();
             }
         }
