@@ -8,11 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- SheetJS, jsPDF & html2canvas -->
+    <!-- SheetJS & jsPDF -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -36,13 +35,17 @@
             </div>
 
             <!-- Mode Switcher -->
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <button type="button" id="btnGuestMode" onclick="switchView('guest')" 
-                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer">
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer">
                     <i data-lucide="user" class="w-4 h-4"></i> Mode Tamu
                 </button>
+                <button type="button" id="btnStaffMode" onclick="switchView('staff')" 
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-emerald-600 text-white shadow flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="pen-tool" class="w-4 h-4"></i> Portal Staf
+                </button>
                 <button type="button" id="btnAdminMode" onclick="showPinModal()" 
-                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer">
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer">
                     <i data-lucide="shield-check" class="w-4 h-4"></i> Panel Admin
                 </button>
             </div>
@@ -58,7 +61,7 @@
                 <div class="p-6 bg-gradient-to-r from-blue-900 to-indigo-900 text-white">
                     <span class="inline-block px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-medium rounded-md mb-2">Check-in Pengunjung Pabrik</span>
                     <h2 class="text-2xl font-bold">Buku Tamu Digital</h2>
-                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood.</p>
+                    <p class="text-xs text-blue-200 mt-1">Formulir Penerimaan Tamu Resmi PT Lampung Bay Seafood (F.HRD.20).</p>
                 </div>
 
                 <form id="dynamicGuestForm" class="p-6 sm:p-8 space-y-4">
@@ -84,6 +87,22 @@
                     <!-- Dynamic Fields Container -->
                     <div id="dynamicFieldsContainer" class="space-y-4 pt-1"></div>
 
+                    <!-- TANDA TANGAN DIGITAL (CANVAS PAD) -->
+                    <div class="pt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-700">Tanda Tangan Tamu / Visitor Signature <span class="text-red-500">*</span></label>
+                            <button type="button" onclick="clearSignature()" class="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Hapus & Ulangi
+                            </button>
+                        </div>
+                        <div class="canvas-container relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50">
+                            <canvas id="signaturePad" class="w-full h-32 block cursor-crosshair"></canvas>
+                            <span id="sigPlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs pointer-events-none">
+                                Goreskan tanda tangan dengan jari di sini
+                            </span>
+                        </div>
+                    </div>
+
                     <div class="pt-4">
                         <button type="submit" id="btnSubmitGuest"
                             class="w-full py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer">
@@ -94,7 +113,26 @@
             </div>
         </div>
 
-        <!-- 2. VIEW MODE ADMIN (DASHBOARD & FORM BUILDER) -->
+        <!-- 2. VIEW PORTAL STAF (KHUSUS STAF YANG DIKUNJUNGI) -->
+        <div id="viewStaff" class="hidden max-w-3xl mx-auto space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-6 sm:p-8 space-y-4">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Portal Tanda Tangan Staf</h2>
+                        <p class="text-xs text-slate-500">Pilih nama Anda atau tamu yang menghadap untuk membubuhkan tanda tangan digital persetujuan kunjungan.</p>
+                    </div>
+                    <button type="button" onclick="loadStaffGuestList()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Muat Ulang
+                    </button>
+                </div>
+
+                <div id="staffGuestListContainer" class="space-y-3">
+                    <!-- List tamu akan muncul secara dinamis di sini -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. VIEW MODE ADMIN (DASHBOARD & FORM BUILDER) -->
         <div id="viewAdmin" class="hidden space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
                 <div>
@@ -182,7 +220,7 @@
                                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
                             </button>
                             <button type="button" id="btnExportPdf" onclick="exportToPDF()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> Cetak(PDF)
+                                <i data-lucide="file-text" class="w-4 h-4"></i> Cetak Form F.HRD.20 (PDF)
                             </button>
                         </div>
                     </div>
@@ -229,7 +267,6 @@
                                     <option value="textarea">Teks Panjang</option>
                                     <option value="select">Dropdown Pilihan</option>
                                     <option value="number">Angka</option>
-                                    <option value="signature">Tanda Tangan Digital (Canvas)</option>
                                 </select>
                             </div>
                             <div id="optionsContainer" class="hidden">
@@ -287,6 +324,36 @@
         </div>
     </main>
 
+    <!-- MODAL TANDA TANGAN STAF (PORTAL STAF) -->
+    <div id="modalStaffSign" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden p-6 space-y-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-800">Tanda Tangan Persetujuan Staf</h3>
+                <p id="modalStaffGuestInfo" class="text-xs text-slate-500">Tamu: -</p>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-semibold text-slate-700">Tanda Tangan Digital Anda</label>
+                    <button type="button" onclick="clearStaffSignature()" class="text-[11px] text-rose-600 hover:text-rose-800 font-medium">Hapus & Ulangi</button>
+                </div>
+                <div class="canvas-container relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50">
+                    <canvas id="staffSignaturePad" class="w-full h-32 block cursor-crosshair"></canvas>
+                    <span id="staffSigPlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs pointer-events-none">
+                        Goreskan tanda tangan Anda di sini
+                    </span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button type="button" onclick="closeStaffSignatureModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="saveStaffSignatureData()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition cursor-pointer">
+                    Setujui & Simpan TTD
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL POP-UP INPUT PIN ADMIN -->
     <div id="modalPinPrompt" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl border border-slate-200 overflow-hidden p-6 text-center space-y-4">
@@ -313,56 +380,48 @@
         </div>
     </div>
 
-    <!-- MODAL POP-UP VISITOR PASS DIGITAL & DOWNLOAD ID CARD -->
+    <!-- MODAL POP-UP VISITOR PASS DIGITAL -->
     <div id="modalVisitorPass" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
-            
-            <!-- Elemen Kartu yang akan didownload (ID Card Visitor) -->
-            <div id="visitorCardContent" class="bg-white">
-                <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 text-white text-center relative">
-                    <div class="inline-block px-3 py-1 bg-amber-400 text-slate-900 rounded-full text-[10px] font-bold tracking-wider uppercase mb-2">
-                        Official Visitor ID Card
-                    </div>
-                    <h3 class="text-base font-bold tracking-tight">PT LAMPUNG BAY SEAFOOD</h3>
-                    <p class="text-[11px] text-blue-200">Izin Akses Masuk Kawasan Pabrik</p>
+            <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 text-white text-center relative">
+                <div class="inline-block px-3 py-1 bg-amber-400 text-slate-900 rounded-full text-[10px] font-bold tracking-wider uppercase mb-2">
+                    Official Visitor Pass
                 </div>
-
-                <div class="p-6 text-center space-y-4">
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2">
-                        <div>
-                            <span class="text-[10px] font-semibold uppercase text-slate-400">Nama Pengunjung</span>
-                            <h4 id="passNama" class="text-base font-bold text-slate-800">-</h4>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
-                            <div>
-                                <span class="text-[10px] text-slate-400 block">Instansi</span>
-                                <span id="passInstansi" class="font-semibold text-slate-700">-</span>
-                            </div>
-                            <div>
-                                <span class="text-[10px] text-slate-400 block">Tujuan Divisi</span>
-                                <span id="passTujuan" class="font-semibold text-slate-700">-</span>
-                            </div>
-                        </div>
-                        <div class="pt-1 border-t border-slate-200/60 text-[11px] text-slate-500">
-                            <span>Waktu Masuk: </span><b id="passWaktu" class="text-slate-700">-</b>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col items-center justify-center pt-1">
-                        <img id="passQRCode" src="" alt="QR Code" class="w-32 h-32 border p-1 rounded-xl bg-white shadow-sm">
-                        <p class="text-[10px] text-slate-400 mt-2 font-mono font-bold text-blue-900" id="passIdNumber">#LBS-001</p>
-                    </div>
-                </div>
+                <h3 class="text-base font-bold tracking-tight">PT LAMPUNG BAY SEAFOOD</h3>
+                <p class="text-[11px] text-blue-200">Izin Akses Masuk Kawasan Pabrik</p>
             </div>
 
-            <!-- Tombol Aksi di Modal -->
-            <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
-                <button type="button" onclick="downloadVisitorCard()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="download" class="w-4 h-4"></i> Simpan Kartu ID (PNG)
-                </button>
-                <button type="button" onclick="closeVisitorPass()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="check-circle" class="w-4 h-4"></i> Selesai & Tutup Kartu
-                </button>
+            <div class="p-6 text-center space-y-4">
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase text-slate-400">Nama Pengunjung</span>
+                        <h4 id="passNama" class="text-base font-bold text-slate-800">-</h4>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Instansi</span>
+                            <span id="passInstansi" class="font-semibold text-slate-700">-</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Tujuan Divisi</span>
+                            <span id="passTujuan" class="font-semibold text-slate-700">-</span>
+                        </div>
+                    </div>
+                    <div class="pt-1 border-t border-slate-200/60 text-[11px] text-slate-500">
+                        <span>Waktu Masuk: </span><b id="passWaktu" class="text-slate-700">-</b>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center pt-1">
+                    <img id="passQRCode" src="" alt="QR Code" class="w-32 h-32 border p-1 rounded-xl bg-white shadow-sm">
+                    <p class="text-[10px] text-slate-400 mt-2">Tunjukkan kartu ini kepada Petugas Keamanan / Resepsionis</p>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" onclick="closeVisitorPass()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Selesai & Tutup Kartu
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -384,8 +443,7 @@
             { id: 'keperluan_kunjungan', label: 'Maksud Kunjungan / Purpose of Visit', type: 'textarea', options: [], required: true },
             { id: 'janji', label: 'Sudah Ada Janji / Belum (Appointment)', type: 'select', options: ['Sudah Janji', 'Belum Ada Janji'], required: true },
             { id: 'jumlah_orang', label: 'Jumlah Orang / How Many People', type: 'number', options: [], required: false },
-            { id: 'no_kendaraan', label: 'No. Kendaraan / Vehicle Number', type: 'text', options: [], required: false },
-            { id: 'tanda_tangan', label: 'Tanda Tangan Tamu', type: 'signature', options: [], required: true }
+            { id: 'no_kendaraan', label: 'No. Kendaraan / Vehicle Number', type: 'text', options: [], required: false }
         ];
 
         let storedFields = localStorage.getItem('lbs_form_fields');
@@ -403,33 +461,24 @@
         } catch(e) { guestRecords = []; }
 
         let currentlyFilteredGuests = [...guestRecords];
-        let activeSignatures = {};
 
         document.getElementById('year').innerText = new Date().getFullYear();
 
-        function formatWaktuIndonesia(dateObj) {
-            return dateObj.toLocaleTimeString('id-ID', {
-                timeZone: 'Asia/Jakarta',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace(/\./g, ':');
-        }
+        // CANVAS TANDA TANGAN TAMU
+        const canvas = document.getElementById('signaturePad');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        let isDrawing = false;
+        let hasSignature = false;
 
-        function formatTanggalIndonesia(dateObj) {
-            const d = String(dateObj.getDate()).padStart(2, '0');
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const y = dateObj.getFullYear();
-            return `${d}/${m}/${y}`;
-        }
+        // CANVAS TANDA TANGAN STAF
+        const staffCanvas = document.getElementById('staffSignaturePad');
+        const staffCtx = staffCanvas ? staffCanvas.getContext('2d') : null;
+        let isStaffDrawing = false;
+        let hasStaffSignature = false;
+        let activeStaffIndex = null;
 
-        function initSignaturePad(canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let isDrawing = false;
-
-            function resize() {
+        function resizeCanvas() {
+            if (canvas) {
                 const ratio = Math.max(window.devicePixelRatio || 1, 1);
                 canvas.width = canvas.offsetWidth * ratio;
                 canvas.height = canvas.offsetHeight * ratio;
@@ -439,73 +488,164 @@
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
             }
-            resize();
-
-            function getPos(e) {
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                return { x: clientX - rect.left, y: clientY - rect.top };
+            if (staffCanvas) {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                staffCanvas.width = staffCanvas.offsetWidth * ratio;
+                staffCanvas.height = staffCanvas.offsetHeight * ratio;
+                staffCtx.scale(ratio, ratio);
+                staffCtx.strokeStyle = "#1e3a8a";
+                staffCtx.lineWidth = 2.5;
+                staffCtx.lineCap = "round";
+                staffCtx.lineJoin = "round";
             }
-
-            canvas.addEventListener('mousedown', (e) => {
-                isDrawing = true;
-                const pos = getPos(e);
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-                document.getElementById('placeholder_' + canvasId)?.classList.add('hidden');
-                e.preventDefault();
-            });
-
-            canvas.addEventListener('mousemove', (e) => {
-                if (!isDrawing) return;
-                const pos = getPos(e);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-                e.preventDefault();
-            });
-
-            window.addEventListener('mouseup', () => {
-                if (isDrawing) {
-                    isDrawing = false;
-                    activeSignatures[canvasId] = canvas.toDataURL("image/png");
-                }
-            });
-
-            canvas.addEventListener('touchstart', (e) => {
-                isDrawing = true;
-                const pos = getPos(e);
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-                document.getElementById('placeholder_' + canvasId)?.classList.add('hidden');
-                e.preventDefault();
-            }, { passive: false });
-
-            canvas.addEventListener('touchmove', (e) => {
-                if (!isDrawing) return;
-                const pos = getPos(e);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-                e.preventDefault();
-            }, { passive: false });
-
-            canvas.addEventListener('touchend', () => {
-                if (isDrawing) {
-                    isDrawing = false;
-                    activeSignatures[canvasId] = canvas.toDataURL("image/png");
-                }
-            });
         }
 
-        window.clearSpecificSignature = function(canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            delete activeSignatures[canvasId];
-            document.getElementById('placeholder_' + canvasId)?.classList.remove('hidden');
-        };
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 300);
 
+        function getPos(cElem, e) {
+            const rect = cElem.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        // Event Listener Tamu
+        function startDraw(e) {
+            isDrawing = true;
+            hasSignature = true;
+            document.getElementById('sigPlaceholder').classList.add('hidden');
+            const pos = getPos(canvas, e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+        function moveDraw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(canvas, e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+        function stopDraw() { isDrawing = false; }
+
+        if (canvas) {
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', moveDraw);
+            window.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('touchstart', startDraw, { passive: false });
+            canvas.addEventListener('touchmove', moveDraw, { passive: false });
+            window.addEventListener('touchend', stopDraw);
+        }
+
+        function clearSignature() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false;
+            document.getElementById('sigPlaceholder').classList.remove('hidden');
+        }
+
+        // Event Listener Staf
+        function startStaffDraw(e) {
+            isStaffDrawing = true;
+            hasStaffSignature = true;
+            document.getElementById('staffSigPlaceholder').classList.add('hidden');
+            const pos = getPos(staffCanvas, e);
+            staffCtx.beginPath();
+            staffCtx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+        function moveStaffDraw(e) {
+            if (!isStaffDrawing) return;
+            const pos = getPos(staffCanvas, e);
+            staffCtx.lineTo(pos.x, pos.y);
+            staffCtx.stroke();
+            e.preventDefault();
+        }
+        function stopStaffDraw() { isStaffDrawing = false; }
+
+        if (staffCanvas) {
+            staffCanvas.addEventListener('mousedown', startStaffDraw);
+            staffCanvas.addEventListener('mousemove', moveStaffDraw);
+            window.addEventListener('mouseup', stopStaffDraw);
+            staffCanvas.addEventListener('touchstart', startStaffDraw, { passive: false });
+            staffCanvas.addEventListener('touchmove', moveStaffDraw, { passive: false });
+            window.addEventListener('touchend', stopStaffDraw);
+        }
+
+        function clearStaffSignature() {
+            if (!staffCtx) return;
+            staffCtx.clearRect(0, 0, staffCanvas.width, staffCanvas.height);
+            hasStaffSignature = false;
+            document.getElementById('staffSigPlaceholder').classList.remove('hidden');
+        }
+
+        // PORTAL STAF: MENGAMBIL DAFTAR TAMU TERBARU
+        function loadStaffGuestList() {
+            const container = document.getElementById('staffGuestListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!guestRecords || guestRecords.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Belum ada data tamu yang masuk.</p>`;
+                return;
+            }
+
+            guestRecords.slice().reverse().forEach((record, index) => {
+                const realIdx = guestRecords.length - 1 - index;
+                const isSigned = record.staff_signature_img ? '<span class="text-emerald-600 font-bold">&#10003; Sudah Ditandatangani</span>' : '<span class="text-amber-600 font-semibold">Menunggu TTD</span>';
+                
+                const card = document.createElement('div');
+                card.className = "p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold text-slate-800">${record.nama}</h4>
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">${record.instansi || '-'}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Menemui: <b class="text-slate-700">${record.staf_ditemui || '-'}</b> &bull; Keperluan: ${record.keperluan_kunjungan || '-'}</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Status: ${isSigned}</p>
+                    </div>
+                    <button type="button" onclick="openStaffSignModal(${realIdx})" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition cursor-pointer flex items-center gap-1.5 shrink-0">
+                        <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i> Beri TTD Staf
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openStaffSignModal(realIdx) {
+            activeStaffIndex = realIdx;
+            const guest = guestRecords[realIdx];
+            document.getElementById('modalStaffGuestInfo').innerText = `Tamu: ${guest.nama} (${guest.instansi}) - Menemui: ${guest.staf_ditemui}`;
+            clearStaffSignature();
+            document.getElementById('modalStaffSign').classList.remove('hidden');
+            setTimeout(resizeCanvas, 100);
+            lucide.createIcons();
+        }
+
+        function closeStaffSignatureModal() {
+            document.getElementById('modalStaffSign').classList.add('hidden');
+            activeStaffIndex = null;
+        }
+
+        function saveStaffSignatureData() {
+            if (activeStaffIndex === null) return;
+            if (!hasStaffSignature) {
+                alert("Harap bubuhkan tanda tangan digital Anda terlebih dahulu!");
+                return;
+            }
+
+            guestRecords[activeStaffIndex].staff_signature_img = staffCanvas.toDataURL("image/png");
+            localStorage.setItem('lbs_guests_data', JSON.stringify(guestRecords));
+
+            closeStaffSignatureModal();
+            loadStaffGuestList();
+            alert("Tanda tangan persetujuan berhasil disimpan! Data siap dicetak oleh Admin.");
+        }
+
+        // FORMAT TANGGAL DAN WAKTU
         function extractISODate(dateVal) {
             if (!dateVal) return '';
             const str = String(dateVal).trim();
@@ -516,22 +656,23 @@
             return '';
         }
 
-        function formatJamMasuk(val) {
-            if (!val || val === '-') return '-';
+        function formatTanggalSlash(val) {
+            if (!val) return '-';
             const str = String(val).trim();
-            
-            if (str.includes('T') || str.includes('1899-')) {
-                const d = new Date(str);
-                if (!isNaN(d.getTime())) {
-                    return d.toLocaleTimeString('id-ID', {
-                        timeZone: 'Asia/Jakarta',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }).replace(/\./g, ':');
-                }
+            const matchIso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (matchIso) {
+                return `${matchIso[3].padStart(2, '0')}/${matchIso[2].padStart(2, '0')}/${matchIso[1]}`;
             }
+            const matchSlash = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if (matchSlash) {
+                return `${matchSlash[1].padStart(2, '0')}/${matchSlash[2].padStart(2, '0')}/${matchSlash[3]}`;
+            }
+            return str;
+        }
 
+        function formatJamMasuk(val) {
+            if (!val) return '-';
+            const str = String(val).trim();
             const matchTime = str.match(/(\d{1,2})[:\.](\d{2})/);
             if (matchTime) {
                 return `${matchTime[1].padStart(2, '0')}:${matchTime[2]}`;
@@ -554,12 +695,9 @@
         // SUBMIT FORM TAMU
         document.getElementById('dynamicGuestForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            for (let f of formFields) {
-                if (f.type === 'signature' && f.required && !activeSignatures['sig_' + f.id]) {
-                    alert(`Harap lengkapi tanda tangan pada bagian: "${f.label}"!`);
-                    return;
-                }
+            if (!hasSignature) {
+                alert("Harap bubuhkan tanda tangan Anda terlebih dahulu pada kotak yang disediakan!");
+                return;
             }
 
             const btn = document.getElementById('btnSubmitGuest');
@@ -570,9 +708,11 @@
             const formData = new FormData(this);
             const now = new Date();
             
-            const slashDate = formatTanggalIndonesia(now);
-            const timeInOnly = formatWaktuIndonesia(now);
+            const slashDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+            const timeInOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const waktuLengkap = `${slashDate} ${timeInOnly}`;
+
+            const signatureDataUrl = canvas.toDataURL("image/png");
 
             const payload = {
                 timestamp: waktuLengkap,
@@ -581,15 +721,13 @@
                 jam_keluar: '-',
                 nama: formData.get('nama'),
                 instansi: formData.get('instansi'),
-                telepon: formData.get('telepon')
+                telepon: formData.get('telepon'),
+                signature: signatureDataUrl,
+                staff_signature_img: ''
             };
 
             formFields.forEach(f => {
-                if (f.type === 'signature') {
-                    payload[f.id] = activeSignatures['sig_' + f.id] || '-';
-                } else {
-                    payload[f.id] = formData.get(f.id) || '-';
-                }
+                payload[f.id] = formData.get(f.id) || '-';
             });
 
             guestRecords.push(payload);
@@ -598,6 +736,9 @@
             if (GOOGLE_SCRIPT_URL) {
                 try {
                     const cloudPayload = { ...payload };
+                    delete cloudPayload.signature;
+                    delete cloudPayload.staff_signature_img;
+
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -609,88 +750,36 @@
                 }
             }
 
-            showVisitorPass(payload, guestRecords.length);
+            showVisitorPass(payload);
 
             this.reset();
-            activeSignatures = {};
-            renderGuestForm();
+            clearSignature();
             btn.disabled = false;
             btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> SIMPAN & Dapatkan Visitor Pass`;
             lucide.createIcons();
         });
 
-        // PERBAIKAN: Fungsi download kartu visitor pass dengan penantian muat QR code
-        async function downloadVisitorCard() {
-            const cardElement = document.getElementById('visitorCardContent');
-            const visitorName = document.getElementById('passNama').innerText.replace(/[^a-zA-Z0-9]/g, '_');
-            
-            const qrImg = document.getElementById('passQRCode');
-            if (qrImg && !qrImg.complete) {
-                await new Promise((resolve) => {
-                    qrImg.onload = resolve;
-                    qrImg.onerror = resolve;
-                });
-            }
-
-            await new Promise(r => setTimeout(r, 150));
-
-            html2canvas(cardElement, { 
-                scale: 2, 
-                backgroundColor: '#ffffff',
-                useCORS: true,
-                allowTaint: true
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Visitor_Pass_${visitorName}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-        }
-
-        async function markAsFinished(index) {
+        // FUNGSI SELESAI / CHECK-OUT
+        function markAsFinished(index) {
             const now = new Date();
-            const timeOutOnly = formatWaktuIndonesia(now);
+            const timeOutOnly = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             
             const realIdx = guestRecords.length - 1 - index;
             if (guestRecords[realIdx]) {
                 guestRecords[realIdx].jam_keluar = timeOutOnly;
                 localStorage.setItem('lbs_guests_data', JSON.stringify(guestRecords));
                 applyFilter();
-
-                if (GOOGLE_SCRIPT_URL) {
-                    try {
-                        const updatePayload = {
-                            action: "update_checkout",
-                            nama: guestRecords[realIdx].nama,
-                            tanggal: guestRecords[realIdx].tanggal,
-                            timestamp: guestRecords[realIdx].timestamp,
-                            jam_keluar: timeOutOnly
-                        };
-                        await fetch(GOOGLE_SCRIPT_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(updatePayload)
-                        });
-                    } catch (err) {
-                        console.error("Gagal sinkron check-out ke spreadsheet:", err);
-                    }
-                }
-
                 alert(`Tamu ${guestRecords[realIdx].nama} telah selesai (Check-out) pada jam ${timeOutOnly}`);
             }
         }
 
-        function showVisitorPass(data, indexNum) {
+        function showVisitorPass(data) {
             document.getElementById('passNama').innerText = data.nama || '-';
             document.getElementById('passInstansi').innerText = data.instansi || '-';
             document.getElementById('passTujuan').innerText = data.departemen_tujuan || '-';
             document.getElementById('passWaktu').innerText = `${data.tanggal} ${data.jam_masuk || ''}`;
-            
-            const idCardStr = `#LBS-${String(indexNum).padStart(3, '0')}`;
-            document.getElementById('passIdNumber').innerText = idCardStr;
 
-            const qrData = encodeURIComponent(`PT LBS VISITOR PASS | ID: ${idCardStr} | Nama: ${data.nama} | Instansi: ${data.instansi} | Waktu: ${data.timestamp}`);
+            const qrData = encodeURIComponent(`PT LBS VISITOR PASS | ${data.nama} | ${data.instansi} | ${data.timestamp}`);
             document.getElementById('passQRCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
 
             document.getElementById('modalVisitorPass').classList.remove('hidden');
@@ -733,6 +822,7 @@
             fetchFromSpreadsheet();
         }
 
+        // KONTROL PIN MODAL
         function showPinModal() {
             const modal = document.getElementById('modalPinPrompt');
             const input = document.getElementById('inputPinField');
@@ -764,24 +854,36 @@
             }
         }
 
+        // FUNGSI GANTI VIEW (GUEST, STAFF, ADMIN)
         function switchView(mode) {
             const guestView = document.getElementById('viewGuest');
+            const staffView = document.getElementById('viewStaff');
             const adminView = document.getElementById('viewAdmin');
+            
             const btnGuest = document.getElementById('btnGuestMode');
+            const btnStaff = document.getElementById('btnStaffMode');
             const btnAdmin = document.getElementById('btnAdminMode');
+
+            if (guestView) guestView.classList.add('hidden');
+            if (staffView) staffView.classList.add('hidden');
+            if (adminView) adminView.classList.add('hidden');
+
+            if (btnGuest) btnGuest.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer";
+            if (btnStaff) btnStaff.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer";
+            if (btnAdmin) btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer";
 
             if (mode === 'guest') {
                 if (guestView) guestView.classList.remove('hidden');
-                if (adminView) adminView.classList.add('hidden');
-                if (btnGuest) btnGuest.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer";
-                if (btnAdmin) btnAdmin.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer";
+                if (btnGuest) btnGuest.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer";
                 renderGuestForm();
-            } else {
-                if (guestView) guestView.classList.add('hidden');
+                setTimeout(resizeCanvas, 150);
+            } else if (mode === 'staff') {
+                if (staffView) staffView.classList.remove('hidden');
+                if (btnStaff) btnStaff.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-emerald-600 text-white shadow flex items-center gap-1.5 cursor-pointer";
+                loadStaffGuestList();
+            } else if (mode === 'admin') {
                 if (adminView) adminView.classList.remove('hidden');
-                if (btnAdmin) btnAdmin.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer";
-                if (btnGuest) btnGuest.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-blue-800 text-blue-200 hover:text-white flex items-center gap-1.5 cursor-pointer";
-                
+                if (btnAdmin) btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-cyan-500 text-white shadow flex items-center gap-1.5 cursor-pointer";
                 switchAdminTab('logs');
                 renderBuilderList();
                 fetchFromSpreadsheet();
@@ -826,7 +928,6 @@
             const container = document.getElementById('dynamicFieldsContainer');
             if (!container) return;
             container.innerHTML = '';
-            activeSignatures = {};
 
             formFields.forEach(field => {
                 const wrapper = document.createElement('div');
@@ -848,25 +949,6 @@
                             ${opts}
                         </select>
                     `;
-                } else if (field.type === 'signature') {
-                    const canvasId = 'sig_' + field.id;
-                    inputHtml = `
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[11px] text-slate-500">Gunakan jari untuk tanda tangan</span>
-                                <button type="button" onclick="clearSpecificSignature('${canvasId}')" class="text-[11px] text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 cursor-pointer">
-                                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Hapus & Ulangi
-                                </button>
-                            </div>
-                            <div class="canvas-container relative border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50">
-                                <canvas id="${canvasId}" class="w-full h-32 block cursor-crosshair"></canvas>
-                                <span id="placeholder_${canvasId}" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs pointer-events-none">
-                                    Goreskan tanda tangan di sini
-                                </span>
-                            </div>
-                        </div>
-                    `;
-                    setTimeout(() => initSignaturePad(canvasId), 100);
                 }
 
                 wrapper.innerHTML = `
@@ -875,7 +957,6 @@
                 `;
                 container.appendChild(wrapper);
             });
-            lucide.createIcons();
         }
 
         async function fetchFromSpreadsheet() {
@@ -941,7 +1022,8 @@
                 <th class="py-3 px-4">Instansi</th>
                 <th class="py-3 px-4">Jam Masuk</th>
                 <th class="py-3 px-4">Jam Keluar</th>
-                <th class="py-3 px-4 text-center">Aksi / Selesai</th>
+                <th class="py-3 px-4 text-center">Status TTD Staf</th>
+                <th class="py-3 px-4 text-center">Check-out</th>
             `;
             formFields.forEach(f => { headerHTML += `<th class="py-3 px-4 whitespace-nowrap">${f.label}</th>`; });
             thead.innerHTML = headerHTML;
@@ -956,15 +1038,13 @@
                     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
                     let customCols = '';
                     formFields.forEach(f => {
-                        let val = record[f.id] !== undefined ? record[f.id] : '-';
-                        if (f.type === 'signature' && typeof val === 'string' && val.startsWith('data:image')) {
-                            val = `<img src="${val}" class="h-8 object-contain border rounded bg-white p-0.5">`;
-                        }
-                        customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate">${val}</td>`;
+                        const val = record[f.id] !== undefined ? record[f.id] : '-';
+                        customCols += `<td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${val}">${val}</td>`;
                     });
 
-                    const jMasuk = formatJamMasuk(record.jam_masuk);
-                    const jKeluar = formatJamMasuk(record.jam_keluar);
+                    const jMasuk = formatJamMasuk(record.jam_masuk || record.timestamp);
+                    const jKeluar = record.jam_keluar && record.jam_keluar !== '-' ? record.jam_keluar : '-';
+                    const hasStaffSig = record.staff_signature_img ? '<span class="text-emerald-600 font-bold text-xs">&#10003; Selesai TTD</span>' : '<span class="text-amber-600 text-xs">Belum TTD</span>';
 
                     tr.innerHTML = `
                         <td class="py-3 px-4 text-xs font-mono text-slate-500 whitespace-nowrap">${formatDisplayDateTime(record.timestamp)}</td>
@@ -972,9 +1052,10 @@
                         <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${record.instansi || '-'}</td>
                         <td class="py-3 px-4 font-mono text-xs text-blue-600 font-bold whitespace-nowrap">${jMasuk}</td>
                         <td class="py-3 px-4 font-mono text-xs text-rose-600 font-bold whitespace-nowrap">${jKeluar}</td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">${hasStaffSig}</td>
                         <td class="py-3 px-4 text-center whitespace-nowrap">
                             <button type="button" onclick="markAsFinished(${index})" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-semibold rounded-lg shadow cursor-pointer transition">
-                                Selesai (Check-out)
+                                Selesai
                             </button>
                         </td>
                         ${customCols}
@@ -1004,8 +1085,8 @@
         function exportToExcel() {
             if (currentlyFilteredGuests.length === 0) { alert("Tidak ada data untuk diekspor!"); return; }
             const excelRows = currentlyFilteredGuests.map((g, idx) => {
-                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": formatJamMasuk(g.jam_masuk), "Jam Keluar": formatJamMasuk(g.jam_keluar) };
-                formFields.forEach(f => { row[f.label] = f.type === 'signature' ? '[Tanda Tangan]' : (g[f.id] !== undefined ? g[f.id] : '-'); });
+                const row = { "No": idx + 1, "Waktu Check-in": formatDisplayDateTime(g.timestamp), "Nama Tamu": g.nama, "Instansi": g.instansi, "Jam Masuk": formatJamMasuk(g.jam_masuk || g.timestamp), "Jam Keluar": g.jam_keluar || '-' };
+                formFields.forEach(f => { row[f.label] = g[f.id] !== undefined ? g[f.id] : '-'; });
                 return row;
             });
             const worksheet = XLSX.utils.json_to_sheet(excelRows);
@@ -1015,6 +1096,7 @@
             XLSX.writeFile(workbook, `Buku_Tamu_PT_LBS_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
+        // FUNGSI LOAD IMAGE ASINKRON UNTUK GITHUB PAGES
         function loadImageAsync(url) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -1036,6 +1118,7 @@
             });
         }
 
+        // FUNGSI GAMBAR VEKTOR LOGO CADANGAN
         function drawVectorLogo(doc, x, y, s) {
             doc.setDrawColor(207, 142, 32);
             doc.setLineWidth(0.9);
@@ -1050,6 +1133,7 @@
             doc.text("lbs", x + (s / 2), y + (s / 2) + 2.5, { align: "center" });
         }
 
+        // CETAK FORM RESMI F.HRD.20
         async function exportToPDF() {
             if (currentlyFilteredGuests.length === 0) {
                 alert("Tidak ada data untuk diekspor!");
@@ -1071,6 +1155,7 @@
             currentlyFilteredGuests.forEach((g, idx) => {
                 if (idx > 0) doc.addPage();
 
+                // 1. KOTAK BINGKAI LUAR HEADER (F.HRD.20)
                 doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.35);
 
@@ -1085,6 +1170,7 @@
 
                 doc.rect(14, 38, 182, 5);
 
+                // --- LOGO KOP KIRI ---
                 if (logoBase64) {
                     doc.addImage(logoBase64, 'PNG', 22.5, 13.5, 17, 17);
                 } else {
@@ -1097,13 +1183,16 @@
                 doc.text("PT. Lampung Bay", 31, 33, { align: "center" });
                 doc.text("Seafood", 31, 36.5, { align: "center" });
 
+                // Kotak Alamat Bawah Kop
                 doc.setFontSize(6.5);
                 doc.text("Jl. Raya Tanjung Bintang No. 101 Desa Serdang Kec. Tanjung Bintang", 16, 41.5);
 
+                // Judul Tengah
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(14);
                 doc.text("Penerimaan Tamu", 97, 26, { align: "center" });
 
+                // Atribut Dokumen Kanan
                 doc.setFontSize(5.5);
                 doc.setFont('helvetica', 'normal');
                 doc.text("Document No.", 147.5, 15);
@@ -1129,6 +1218,7 @@
                 doc.setFont('helvetica', 'bold');
                 doc.text("19 Januari 2026", 173, 36);
 
+                // 2. ISIAN DATA DENGAN MODEL GARIS BAWAH (1 - 6)
                 const items = [
                     { no: "1.", id: "Nama Pengunjung", en: "Name of Visitor", val: g.nama || "" },
                     { no: "2.", id: "Alamat", en: "Address", val: g.alamat || "" },
@@ -1172,8 +1262,10 @@
                     curY += (it.id.includes("\n") || it.en.includes("\n")) ? 16 : 13.5;
                 });
 
+                // 3. KOTAK-KOTAK BAGIAN BAWAH (2 KOLOM)
                 let bY = 142;
 
+                // --- KOLOM KIRI ---
                 doc.rect(25, bY, 52, 11);
                 doc.line(55, bY, 55, bY + 11);
                 doc.setFont('helvetica', 'normal');
@@ -1183,7 +1275,7 @@
                 doc.text("Date", 40, bY + 8.5, { align: "center" });
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
-                doc.text(formatTanggalIndonesia(new Date(g.tanggal || g.timestamp)), 57, bY + 7);
+                doc.text(formatTanggalSlash(g.tanggal || g.timestamp), 57, bY + 7);
 
                 bY += 15;
                 doc.rect(25, bY, 52, 11);
@@ -1217,6 +1309,7 @@
                 doc.setFontSize(7);
                 doc.text("( Petugas Keamanan )", 51, bY + 25, { align: "center" });
 
+                // --- KOLOM KANAN ---
                 let rY = 142;
 
                 doc.rect(107, rY, 73, 11);
@@ -1227,8 +1320,8 @@
                 doc.text("Jam Masuk", 122, rY + 4, { align: "center" });
                 doc.text("Jam Keluar", 122, rY + 9.5, { align: "center" });
                 doc.setFontSize(8);
-                doc.text(formatJamMasuk(g.jam_masuk), 142, rY + 4);
-                doc.text(formatJamMasuk(g.jam_keluar), 142, rY + 9.5);
+                doc.text(formatJamMasuk(g.jam_masuk || g.timestamp), 142, rY + 4);
+                doc.text(g.jam_keluar && g.jam_keluar !== '-' ? g.jam_keluar : '-', 142, rY + 9.5);
 
                 rY += 15;
                 doc.rect(107, rY, 73, 11);
@@ -1236,9 +1329,7 @@
                 doc.setFontSize(7.5);
                 doc.text("No ID Card", 122, rY + 7, { align: "center" });
                 doc.setFontSize(8.5);
-                
-                const globalIndex = guestRecords.indexOf(g) + 1;
-                doc.text(`#LBS-${String(globalIndex).padStart(3, '0')}`, 142, rY + 7);
+                doc.text(`#LBS-${String(idx + 1).padStart(3, '0')}`, 142, rY + 7);
 
                 rY += 15;
                 doc.rect(107, rY, 73, 26);
@@ -1246,13 +1337,9 @@
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN TAMU", 143.5, rY + 5, { align: "center" });
 
-                let sigImage = g.tanda_tangan || g.signature;
-                if (!sigImage) {
-                    const sigField = formFields.find(f => f.type === 'signature');
-                    if (sigField && g[sigField.id]) sigImage = g[sigField.id];
-                }
-
-                if (sigImage && typeof sigImage === 'string' && sigImage.startsWith('data:image')) {
+                // Tanda Tangan Tamu
+                const sigImage = g.signature || g.tanda_tangan;
+                if (sigImage && sigImage.startsWith('data:image')) {
                     try {
                         doc.addImage(sigImage, 'PNG', 121.5, rY + 7.5, 44, 15);
                     } catch(e) {}
@@ -1265,6 +1352,15 @@
                 doc.line(107, rY + 7, 180, rY + 7);
                 doc.setFontSize(7.5);
                 doc.text("TANDA TANGAN YANG DIKUNJUNGI", 143.5, rY + 5, { align: "center" });
+
+                // Tanda Tangan Staf Digital
+                const staffSigImg = g.staff_signature_img;
+                if (staffSigImg && staffSigImg.startsWith('data:image')) {
+                    try {
+                        doc.addImage(staffSigImg, 'PNG', 121.5, rY + 8, 44, 14);
+                    } catch(e) {}
+                }
+
                 doc.setFontSize(7);
                 doc.text(`( ${g.staf_ditemui || '......................'} )`, 143.5, rY + 25, { align: "center" });
             });
@@ -1273,7 +1369,7 @@
 
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak(PDF)`;
+                btn.innerHTML = `<i data-lucide="file-text" class="w-4 h-4"></i> Cetak Form F.HRD.20 (PDF)`;
                 lucide.createIcons();
             }
         }
@@ -1298,7 +1394,6 @@
             this.reset();
             toggleOptionInput();
             renderBuilderList();
-            renderGuestForm();
             alert("Pertanyaan berhasil ditambahkan!");
         });
 
@@ -1307,7 +1402,6 @@
                 formFields = formFields.filter(f => f.id !== id);
                 localStorage.setItem('lbs_form_fields', JSON.stringify(formFields));
                 renderBuilderList();
-                renderGuestForm();
             }
         }
 
@@ -1340,6 +1434,7 @@
             lucide.createIcons();
         }
 
+        // Inisialisasi awal
         renderGuestForm();
         lucide.createIcons();
     </script>
